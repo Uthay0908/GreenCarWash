@@ -11,10 +11,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>catalog-service</artifactId>
+    <artifactId>washer-assignment-service</artifactId>
     <packaging>jar</packaging>
 
-    <name>GreenCarWash :: Catalog Service</name>
+    <name>GreenCarWash :: Washer Assignment Service</name>
 
     <dependencies>
         <dependency>
@@ -48,6 +48,10 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>

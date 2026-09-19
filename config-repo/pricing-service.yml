@@ -1,0 +1,10 @@
+server:
+  port: 8086
+
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/pricing_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+
+weather:
+  api-key: ${OPENWEATHER_API_KEY:}
+  provider: ${WEATHER_PROVIDER:mock}
