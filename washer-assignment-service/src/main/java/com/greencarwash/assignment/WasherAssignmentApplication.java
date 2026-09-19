@@ -1,4 +1,4 @@
-package com.greencarwash.catalog;
+package com.greencarwash.assignment;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -7,10 +7,10 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@ComponentScan(basePackages = {"com.greencarwash.catalog", "com.greencarwash.common"})
-public class CatalogServiceApplication {
+@ComponentScan(basePackages = {"com.greencarwash.assignment", "com.greencarwash.common"})
+public class WasherAssignmentApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(CatalogServiceApplication.class, args);
+        SpringApplication.run(WasherAssignmentApplication.class, args);
     }
 }
