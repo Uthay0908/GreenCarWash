@@ -1,0 +1,39 @@
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--gcw-surface);
+  border: 1px solid var(--gcw-border);
+  border-radius: var(--gcw-radius-md);
+  box-shadow: var(--gcw-shadow-sm);
+  padding: 1.25rem 1.4rem;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--gcw-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  background: var(--gcw-primary-light);
+}
+
+.accent-info .stat-icon { background: #e8f0fe; }
+.accent-warning .stat-icon { background: #fef3e2; }
+.accent-danger .stat-icon { background: #fdecec; }
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gcw-text);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--gcw-text-muted);
+  margin-top: 0.15rem;
+}
