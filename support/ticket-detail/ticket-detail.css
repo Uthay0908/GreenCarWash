@@ -1,0 +1,42 @@
+.kv-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+}
+
+.kv-list > div {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.kv-list dt {
+  color: var(--gcw-text-muted);
+  font-weight: 600;
+  min-width: 100px;
+}
+
+.kv-list dd {
+  margin: 0;
+}
+
+.description {
+  padding-top: 1rem;
+  border-top: 1px solid var(--gcw-border);
+}
+
+.resolution-box {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--gcw-primary-light);
+  border-radius: var(--gcw-radius-sm);
+}
+
+.resolution-box p {
+  margin: 0.3rem 0 0;
+  color: var(--gcw-text);
+}
+
+.detail-back {
+  margin-top: 1.5rem;
+}
