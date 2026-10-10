@@ -1,0 +1,85 @@
+<div class="notifications-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Corporate Notification Center</h1>
+      <p class="page-subtitle">Real-time alerts for fleet wash status transitions, washer assignments, and billing confirmations.</p>
+    </div>
+    <div class="header-actions">
+      @if (unreadCount() > 0) {
+        <button class="gcw-btn gcw-btn-secondary" (click)="markAllAsRead()">
+          Mark All as Read ({{ unreadCount() }})
+        </button>
+      }
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadNotifications()" [disabled]="loading()">
+        <span>↻ Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="toolbar-card gcw-card">
+    <div class="filter-tabs">
+      <button type="button" class="tab-btn" [class.active]="filter() === 'ALL'" (click)="filter.set('ALL')">
+        All Alerts ({{ notifications().length }})
+      </button>
+      <button type="button" class="tab-btn" [class.active]="filter() === 'UNREAD'" (click)="filter.set('UNREAD')">
+        Unread ({{ unreadCount() }})
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="gcw-card state-card">
+      <div class="spinner"></div>
+      <p>Loading notification events from notification service…</p>
+    </div>
+  } @else if (error()) {
+    <div class="gcw-card state-card error-card">
+      <div class="state-icon">⚠️</div>
+      <h3>Notifications Unavailable</h3>
+      <p>{{ error() }}</p>
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadNotifications()">Retry</button>
+    </div>
+  } @else if (filteredNotifications().length === 0) {
+    <div class="gcw-card state-card">
+      <div class="state-icon">🔔</div>
+      <h3>No Notifications</h3>
+      <p>
+        @if (filter() === 'UNREAD') {
+          You are all caught up! No unread notifications.
+        } @else {
+          Your corporate account has no notifications yet.
+        }
+      </p>
+    </div>
+  } @else {
+    <div class="notifications-list">
+      @for (n of filteredNotifications(); track n.id) {
+        <div class="notification-item gcw-card" [class.unread]="!n.read" (click)="markRead(n)">
+          <div class="notif-icon-box">
+            <span class="notif-icon">{{ getIconForEvent(n.eventType) }}</span>
+          </div>
+
+          <div class="notif-content">
+            <div class="notif-title-row">
+              <h4 class="notif-title">{{ n.title }}</h4>
+              <span class="notif-time">{{ n.createdAt | date:'medium' }}</span>
+            </div>
+            <p class="notif-msg">{{ n.message || n.body }}</p>
+            <div class="notif-meta-row">
+              @if (n.eventType) {
+                <span class="notif-type-tag">{{ n.eventType }}</span>
+              }
+              @if (n.referenceId) {
+                <span class="notif-ref-tag">Booking Ref #{{ n.referenceId }}</span>
+              }
+            </div>
+          </div>
+
+          @if (!n.read) {
+            <span class="unread-dot" title="Unread notification"></span>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

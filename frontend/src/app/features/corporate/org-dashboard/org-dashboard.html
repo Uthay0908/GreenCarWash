@@ -1,0 +1,275 @@
+<div class="corporate-dashboard">
+  <!-- Top Greeting & Organization Identity Header -->
+  <div class="corporate-top-bar">
+    <div class="corp-greeting-box">
+      <h1 class="corp-title">Corporate Fleet Overview</h1>
+      <div class="corp-subtitle-row">
+        <span class="company-badge">{{ organization()?.name || 'Loading Organization…' }}</span>
+        <span class="corp-role-tag">{{ corporateRole() || 'MEMBER' }}</span>
+        <span class="corp-user-id">User: {{ currentUser()?.fullName || currentUser()?.email }}</span>
+      </div>
+    </div>
+    <div class="header-action-btns">
+      <a routerLink="/corporate/bookings" class="gcw-btn gcw-btn-primary">
+        + Schedule Bulk Wash
+      </a>
+      <a routerLink="/corporate/fleet" class="gcw-btn gcw-btn-secondary">
+        + Add Vehicle
+      </a>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="gcw-card state-card">
+      <div class="spinner"></div>
+      <p>Synchronizing real-time corporate metrics from backend…</p>
+    </div>
+  } @else if (error()) {
+    <div class="gcw-card state-card error-card">
+      <div class="state-icon">⚠️</div>
+      <h3>Failed to load corporate metrics</h3>
+      <p>{{ error() }}</p>
+      <button type="button" class="gcw-btn gcw-btn-secondary" (click)="loadDashboardData()">
+        Retry Loading
+      </button>
+    </div>
+  } @else {
+    <!-- Dynamic Real Backend KPI Cards -->
+    <div class="corp-stats-grid">
+      <div class="corp-stat-card">
+        <div class="stat-top">
+          <span class="stat-label">Fleet Vehicles</span>
+          <span class="stat-chip">Enrolled</span>
+        </div>
+        <div class="stat-val-row">
+          <span class="corp-stat-number">{{ totalVehicles() }}</span>
+          <span class="corp-stat-icon">🚗</span>
+        </div>
+        <div class="stat-footer-sub">
+          <a routerLink="/corporate/fleet">View fleet roster →</a>
+        </div>
+      </div>
+
+      <div class="corp-stat-card">
+        <div class="stat-top">
+          <span class="stat-label">Bulk Wash Orders</span>
+          <span class="stat-chip" [class.chip-warning]="pendingBookingsCount() > 0">
+            {{ pendingBookingsCount() }} Pending
+          </span>
+        </div>
+        <div class="stat-val-row">
+          <span class="corp-stat-number">{{ totalBulkBookings() }}</span>
+          <span class="corp-stat-icon">📅</span>
+        </div>
+        <div class="stat-footer-sub">
+          <span>{{ executedBookingsCount() }} completed executions</span>
+        </div>
+      </div>
+
+      <div class="corp-stat-card">
+        <div class="stat-top">
+          <span class="stat-label">Servicing Locations</span>
+          <span class="stat-chip">Yards</span>
+        </div>
+        <div class="stat-val-row">
+          <span class="corp-stat-number">{{ totalLocations() }}</span>
+          <span class="corp-stat-icon">📍</span>
+        </div>
+        <div class="stat-footer-sub">
+          <a routerLink="/corporate/locations">Manage hub locations →</a>
+        </div>
+      </div>
+
+      <div class="corp-stat-card">
+        <div class="stat-top">
+          <span class="stat-label">Total Spend</span>
+          <span class="stat-chip">Invoiced</span>
+        </div>
+        <div class="stat-val-row">
+          <span class="corp-stat-number">{{ totalSpend() | currency:'USD':'symbol':'1.0-2' }}</span>
+          <span class="corp-stat-icon">💳</span>
+        </div>
+        <div class="stat-footer-sub">
+          <a routerLink="/corporate/payments">View payments & settlements →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary Metric Bar: Schedules, Team, Support -->
+    <div class="corp-secondary-bar">
+      <div class="sec-item">
+        <span class="sec-ico">🔁</span>
+        <div class="sec-meta">
+          <strong>{{ activeSchedulesCount() }}</strong>
+          <span>Active Recurring Schedules</span>
+        </div>
+      </div>
+      <div class="sec-item">
+        <span class="sec-ico">👥</span>
+        <div class="sec-meta">
+          <strong>{{ totalMembers() }}</strong>
+          <span>Team Members &amp; Dispatchers</span>
+        </div>
+      </div>
+      <div class="sec-item">
+        <span class="sec-ico">🎫</span>
+        <div class="sec-meta">
+          <strong>{{ openTicketsCount() }}</strong>
+          <span>Active Support Inquiries</span>
+        </div>
+      </div>
+      <div class="sec-item">
+        <span class="sec-ico">🔔</span>
+        <div class="sec-meta">
+          <strong>{{ notifications().length }}</strong>
+          <span>Recent Operational Alerts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid: Recent Bulk Wash Orders & Notifications -->
+    <div class="corp-main-grid">
+      <!-- Left Column: Recent Orders from real backend -->
+      <div class="corp-card recent-orders-card">
+        <div class="corp-card-head">
+          <div class="head-title-wrap">
+            <h3>Recent Bulk Wash Orders</h3>
+            <span class="count-badge">{{ totalBulkBookings() }}</span>
+          </div>
+          <a routerLink="/corporate/bookings" class="head-action-link">View All Bookings →</a>
+        </div>
+
+        @if (recentBookings().length === 0) {
+          <div class="empty-list-state">
+            <span class="empty-list-icon">📅</span>
+            <h4>No corporate wash requests recorded yet</h4>
+            <p>Schedule a wash batch for multiple fleet vehicles at any of your designated servicing yards.</p>
+            <a routerLink="/corporate/bookings" class="gcw-btn gcw-btn-primary gcw-btn-sm">
+              Create First Bulk Booking
+            </a>
+          </div>
+        } @else {
+          <div class="orders-table-wrap">
+            <table class="corp-table">
+              <thead>
+                <tr>
+                  <th>Order Ref</th>
+                  <th>Scheduled Time</th>
+                  <th>Vehicles</th>
+                  <th>Est. Total</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (b of recentBookings(); track b.id) {
+                  <tr>
+                    <td>
+                      <strong>#{{ b.id }}</strong>
+                    </td>
+                    <td>
+                      <span class="date-text">{{ b.scheduledAt | date: 'short' }}</span>
+                    </td>
+                    <td>
+                      <span class="veh-count-pill">{{ b.itemCount || b.items?.length || b.addOnIds?.length || 1 }} vehicle(s)</span>
+                    </td>
+                    <td>
+                      <strong>Package #{{ b.packageId }}</strong>
+                    </td>
+                    <td>
+                      <span class="status-pill status-{{ b.status.toLowerCase() }}">
+                        {{ b.status }}
+                      </span>
+                    </td>
+                    <td>
+                      <a routerLink="/corporate/bookings" class="table-link">Inspect →</a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+      <!-- Right Column: Operational Alerts & Quick Links -->
+      <div class="corp-side-column">
+        <!-- System Alerts & Notifications -->
+        <div class="corp-card alerts-card">
+          <div class="corp-card-head">
+            <h3>Recent Alerts &amp; Notifications</h3>
+            <a routerLink="/corporate/notifications" class="head-action-link">View All Alerts →</a>
+          </div>
+
+          @if (recentNotifications().length === 0) {
+            <div class="empty-notifs">
+              <span>✓ All fleet systems operational. No unread alerts.</span>
+            </div>
+          } @else {
+            <div class="notifs-list">
+              @for (n of recentNotifications(); track n.id) {
+                <div class="notif-item" [class.unread]="!n.read">
+                  <span class="notif-dot"></span>
+                  <div class="notif-content">
+                    <strong class="notif-title">{{ n.title }}</strong>
+                    <p class="notif-body">{{ n.message }}</p>
+                    <span class="notif-time">{{ n.createdAt | date: 'shortTime' }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Quick Access Hub -->
+        <div class="corp-card hub-card">
+          <div class="corp-card-head">
+            <h3>Corporate Operations</h3>
+          </div>
+          <div class="hub-nav-list">
+            <a routerLink="/corporate/payments" class="hub-nav-link">
+              <span class="hub-ico">💰</span>
+              <div class="hub-nav-text">
+                <strong>Payments &amp; Settlements</strong>
+                <small>Review receipts and settle pending balances</small>
+              </div>
+              <span class="hub-arrow">→</span>
+            </a>
+            <a routerLink="/corporate/billing" class="hub-nav-link">
+              <span class="hub-ico">📑</span>
+              <div class="hub-nav-text">
+                <strong>Corporate Invoicing &amp; Tax</strong>
+                <small>{{ invoices().length }} invoices available</small>
+              </div>
+              <span class="hub-arrow">→</span>
+            </a>
+            <a routerLink="/corporate/fleet" class="hub-nav-link">
+              <span class="hub-ico">🚗</span>
+              <div class="hub-nav-text">
+                <strong>Manage Fleet Vehicles</strong>
+                <small>{{ totalVehicles() }} vehicles enrolled</small>
+              </div>
+              <span class="hub-arrow">→</span>
+            </a>
+            <a routerLink="/corporate/locations" class="hub-nav-link">
+              <span class="hub-ico">📍</span>
+              <div class="hub-nav-text">
+                <strong>Servicing Depots &amp; Hubs</strong>
+                <small>{{ totalLocations() }} locations configured</small>
+              </div>
+              <span class="hub-arrow">→</span>
+            </a>
+            <a routerLink="/corporate/members" class="hub-nav-link">
+              <span class="hub-ico">👥</span>
+              <div class="hub-nav-text">
+                <strong>Team Dispatchers &amp; Admins</strong>
+                <small>{{ totalMembers() }} members</small>
+              </div>
+              <span class="hub-arrow">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

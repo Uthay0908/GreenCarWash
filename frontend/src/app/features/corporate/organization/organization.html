@@ -1,0 +1,205 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Corporate Organization Profile</h1>
+    <p>Manage legal company identity, corporate billing credentials, and account security.</p>
+  </div>
+  @if (currentOrg() && !isEditing()) {
+    <button type="button" class="gcw-btn gcw-btn-primary" (click)="startEditing()">
+      ✏️ Edit Details
+    </button>
+  }
+</div>
+
+@if (successMessage()) {
+  <div class="gcw-card alert-card alert-success">
+    <span class="alert-icon">✓</span>
+    <span>{{ successMessage() }}</span>
+  </div>
+}
+
+@if (errorMessage()) {
+  <div class="gcw-card alert-card alert-danger">
+    <span class="alert-icon">⚠️</span>
+    <span>{{ errorMessage() }}</span>
+  </div>
+}
+
+@if (loading()) {
+  <div class="gcw-card loading-card">
+    <div class="spinner"></div>
+    <p>Loading organization profile…</p>
+  </div>
+} @else {
+  <!-- View Mode -->
+  @if (currentOrg() && !isEditing()) {
+    @let org = currentOrg()!;
+    <div class="gcw-grid gcw-grid-2">
+      <div class="gcw-card">
+        <div class="card-title-row">
+          <h3>Company Identity</h3>
+          <span class="gcw-badge" [class.gcw-badge-success]="org.active" [class.gcw-badge-danger]="!org.active">
+            {{ org.active ? 'ACTIVE' : 'INACTIVE' }}
+          </span>
+        </div>
+
+        <dl class="org-details-list">
+          <div>
+            <dt>Organization Name</dt>
+            <dd><strong>{{ org.name }}</strong></dd>
+          </div>
+          <div>
+            <dt>Organization Ref ID</dt>
+            <dd><span class="code-badge">#{{ org.id }}</span></dd>
+          </div>
+          <div>
+            <dt>Owner User Account</dt>
+            <dd>Account #{{ org.ownerUserAccountId }}</dd>
+          </div>
+          <div>
+            <dt>Created Date</dt>
+            <dd>{{ org.createdAt | date: 'mediumDate' }}</dd>
+          </div>
+          <div>
+            <dt>Last Updated</dt>
+            <dd>{{ org.updatedAt | date: 'mediumDate' }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="gcw-card">
+        <h3>Billing &amp; Tax Credentials</h3>
+        <dl class="org-details-list">
+          <div>
+            <dt>Billing Email</dt>
+            <dd>{{ org.billingEmail || 'None specified' }}</dd>
+          </div>
+          <div>
+            <dt>Billing Address</dt>
+            <dd class="multiline-text">{{ org.billingAddress || 'No billing address on file' }}</dd>
+          </div>
+          <div>
+            <dt>Invoice Dispatch</dt>
+            <dd>Electronic PDF via Corporate Invoice Service</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Security & Account Management Card -->
+    <div class="gcw-card security-card" style="margin-top: 1.5rem;">
+      <div class="card-title-row">
+        <h3>Corporate Account &amp; Access Session</h3>
+        <span class="role-pill">{{ corporateRole() || 'MEMBER' }}</span>
+      </div>
+
+      <div class="security-grid">
+        <div class="sec-detail">
+          <span class="sec-label">Signed-in User</span>
+          <strong>{{ currentUser()?.fullName || 'Demo Fleet Manager' }}</strong>
+          <small>{{ currentUser()?.email }}</small>
+        </div>
+        <div class="sec-detail">
+          <span class="sec-label">Corporate Role</span>
+          <strong>{{ corporateRole() || 'MEMBER' }}</strong>
+          <small>Protected by CorporateGuard</small>
+        </div>
+        <div class="sec-detail">
+          <span class="sec-label">Active Session</span>
+          <span class="session-status">✓ Authenticated with JWT</span>
+          <small>Access Token active</small>
+        </div>
+      </div>
+
+      <div class="logout-action-box">
+        <div>
+          <strong>Terminate Corporate Session</strong>
+          <p>Signing out clears corporate tokens, organization cache, and redirects to login.</p>
+        </div>
+        <button type="button" class="gcw-btn gcw-btn-danger" (click)="logout()">
+          Sign Out of Corporate
+        </button>
+      </div>
+    </div>
+  } @else {
+    <!-- Edit or Register Mode -->
+    <div class="gcw-card form-card">
+      <div class="form-header">
+        <h3>{{ currentOrg() ? 'Update Organization Details' : 'Register New Corporate Organization' }}</h3>
+        <p>
+          {{ currentOrg()
+              ? 'Update the primary contact, company name, and official billing address.'
+              : 'Register your business or fleet to unlock dedicated corporate wash pricing, team member permissions, and automated scheduling.' }}
+        </p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <div class="gcw-field">
+          <label class="gcw-label" for="name">
+            Organization / Company Legal Name <span class="required">*</span>
+          </label>
+          <input
+            id="name"
+            type="text"
+            class="gcw-input"
+            formControlName="name"
+            placeholder="e.g. Acme Logistics Pvt Ltd"
+          />
+          @if (f.name.touched && f.name.errors) {
+            <div class="gcw-field-error">Company name is required (minimum 2 characters).</div>
+          }
+        </div>
+
+        <div class="gcw-field">
+          <label class="gcw-label" for="billingEmail">
+            Billing / Accounting Email Address
+          </label>
+          <input
+            id="billingEmail"
+            type="email"
+            class="gcw-input"
+            formControlName="billingEmail"
+            placeholder="e.g. accounts@acmelogistics.com"
+          />
+          @if (f.billingEmail.touched && f.billingEmail.errors) {
+            <div class="gcw-field-error">Please provide a valid email format.</div>
+          }
+        </div>
+
+        <div class="gcw-field">
+          <label class="gcw-label" for="billingAddress">
+            Official Billing &amp; Invoicing Address
+          </label>
+          <textarea
+            id="billingAddress"
+            class="gcw-textarea"
+            rows="3"
+            formControlName="billingAddress"
+            placeholder="e.g. Suite 400, Central Tech Park, Erode, Tamil Nadu 638001"
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="gcw-btn gcw-btn-primary" [disabled]="saving()">
+            @if (saving()) {
+              <span class="btn-spinner"></span>
+              <span>Saving Changes…</span>
+            } @else {
+              <span>{{ currentOrg() ? 'Save Changes' : 'Create Organization' }}</span>
+            }
+          </button>
+
+          @if (currentOrg()) {
+            <button
+              type="button"
+              class="gcw-btn gcw-btn-secondary"
+              [disabled]="saving()"
+              (click)="cancelEditing()"
+            >
+              Cancel
+            </button>
+          }
+        </div>
+      </form>
+    </div>
+  }
+}

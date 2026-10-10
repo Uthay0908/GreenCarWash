@@ -1,0 +1,422 @@
+<div class="billing-container">
+  <!-- Header -->
+  <div class="billing-header">
+    <div>
+      <h1 class="billing-title">Corporate Billing & Invoices</h1>
+      <p class="billing-subtitle">Manage organization billing profile, official tax invoices, and service expenditure receipts.</p>
+    </div>
+    <div class="header-actions">
+      @if (unbilledBookings().length > 0) {
+        <button class="gcw-btn gcw-btn-primary" (click)="activeTab.set('UNBILLED')">
+          <span>🧾 Settle & Generate Invoices ({{ unbilledBookings().length }})</span>
+        </button>
+      }
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadData()" [disabled]="loading()">
+        <span>↻ Refresh Billing</span>
+      </button>
+    </div>
+  </div>
+
+  @if (toast(); as t) {
+    <div class="toast-alert" [class.toast-error]="t.type === 'error'">
+      <span>{{ t.text }}</span>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="gcw-card text-center py-5">
+      <div class="spinner-large"></div>
+      <p class="mt-2 text-muted">Retrieving corporate billing profile, invoices, and unbilled services…</p>
+    </div>
+  } @else if (organization(); as org) {
+    <!-- Stats Row -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-icon">💰</span>
+        <div class="stat-content">
+          <span class="stat-label">Total Invoiced</span>
+          <span class="stat-value">{{ totalBilled() | currency:'USD':'symbol':'1.0-2' }}</span>
+          <span class="stat-sub">{{ invoices().length }} official invoice(s)</span>
+        </div>
+      </div>
+
+      <div class="stat-card" [class.highlight-stat]="unbilledTotal() > 0">
+        <span class="stat-icon">⏳</span>
+        <div class="stat-content">
+          <span class="stat-label">Unbilled Services</span>
+          <span class="stat-value">{{ unbilledTotal() | currency:'USD':'symbol':'1.0-2' }}</span>
+          <span class="stat-sub">{{ unbilledBookings().length }} booking(s) pending invoice</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-icon">📑</span>
+        <div class="stat-content">
+          <span class="stat-label">Completed Bulk Washes</span>
+          <span class="stat-value">{{ executedCount() }}</span>
+          <span class="stat-sub">From bulk requests</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-icon">🏢</span>
+        <div class="stat-content">
+          <span class="stat-label">Billing Entity</span>
+          <span class="stat-value org-name-truncate" [title]="org.name">{{ org.name }}</span>
+          <span class="stat-sub">ID: #{{ org.id }} ({{ org.active ? 'ACTIVE' : 'INACTIVE' }})</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Organization Billing Profile -->
+    <div class="gcw-card billing-profile-card">
+      <div class="card-title-row">
+        <h3>🏢 Organization Billing Information</h3>
+        <span class="gcw-badge gcw-badge-success">Consolidated Invoicing</span>
+      </div>
+      <div class="profile-grid">
+        <div class="profile-item">
+          <span class="profile-lbl">Organization Legal Name</span>
+          <span class="profile-val">{{ org.name }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-lbl">GST / Tax Identification</span>
+          <span class="profile-val">{{ org.billingAddress || 'Registered Corporate Entity' }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-lbl">Billing Email</span>
+          <span class="profile-val">{{ org.billingEmail || 'Same as primary contact' }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-lbl">Billing Address</span>
+          <span class="profile-val">{{ org.billingAddress || 'Headquarters location' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Switcher -->
+    <div class="billing-tabs-row">
+      <button
+        type="button"
+        class="b-tab-btn"
+        [class.active]="activeTab() === 'INVOICES'"
+        (click)="activeTab.set('INVOICES')"
+      >
+        <span>Tax Invoices & Receipts ({{ invoices().length }})</span>
+      </button>
+      <button
+        type="button"
+        class="b-tab-btn"
+        [class.active]="activeTab() === 'UNBILLED'"
+        (click)="activeTab.set('UNBILLED')"
+      >
+        <span>Unbilled Fleet Washes</span>
+        @if (unbilledBookings().length > 0) {
+          <span class="badge-pill">{{ unbilledBookings().length }}</span>
+        }
+      </button>
+    </div>
+
+    <!-- TAB 1: INVOICES -->
+    @if (activeTab() === 'INVOICES') {
+      <div class="gcw-card invoices-card">
+        <div class="card-title-row">
+          <div>
+            <h3>🧾 Official Tax Invoices</h3>
+            <p class="text-muted text-sm m-0">Official tax invoices generated for settled fleet wash executions.</p>
+          </div>
+        </div>
+
+        @if (invoices().length === 0) {
+          <div class="empty-invoices text-center py-4">
+            <div class="empty-icon">📄</div>
+            <h4 class="empty-title">No Invoices Issued Yet</h4>
+            <p class="text-muted">Tax invoices are generated automatically when fleet wash bookings are settled.</p>
+            @if (unbilledBookings().length > 0) {
+              <button class="gcw-btn gcw-btn-primary mt-2" (click)="activeTab.set('UNBILLED')">
+                View & Settle {{ unbilledBookings().length }} Unbilled Booking(s)
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="gcw-table">
+              <thead>
+                <tr>
+                  <th>Invoice #</th>
+                  <th>Booking Ref</th>
+                  <th>Issued Date</th>
+                  <th>Items</th>
+                  <th>Total Amount</th>
+                  <th>Payment Status</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (inv of invoices(); track inv.id) {
+                  <tr>
+                    <td>
+                      <strong class="invoice-num">{{ inv.invoiceNumber || ('INV-' + inv.id) }}</strong>
+                    </td>
+                    <td>
+                      @if (inv.bookingId) {
+                        <span class="booking-ref-badge">Booking #{{ inv.bookingId }}</span>
+                      } @else {
+                        <span class="text-muted">Corporate Fleet</span>
+                      }
+                    </td>
+                    <td>
+                      {{ inv.issuedAt | date:'mediumDate' }}
+                    </td>
+                    <td>
+                      <span class="items-count">{{ inv.items?.length || 1 }} line item(s)</span>
+                    </td>
+                    <td>
+                      <strong class="total-amt">{{ inv.totalAmount | currency:'USD':'symbol':'1.0-2' }}</strong>
+                      @if (inv.discountAmount > 0) {
+                        <span class="discount-pill">-{{ inv.discountAmount | currency:'USD':'symbol':'1.0-2' }}</span>
+                      }
+                    </td>
+                    <td>
+                      <span class="status-pill status-paid">PAID / SETTLED</span>
+                    </td>
+                    <td class="text-right">
+                      <button
+                        type="button"
+                        class="gcw-btn gcw-btn-sm gcw-btn-secondary"
+                        (click)="viewDetails(inv)">
+                        View Details
+                      </button>
+                      <button
+                        type="button"
+                        class="gcw-btn gcw-btn-sm gcw-btn-primary ml-1"
+                        (click)="downloadPdf(inv, $event)"
+                        [disabled]="downloadingId() === inv.id">
+                        {{ downloadingId() === inv.id ? 'Generating…' : '⬇ PDF' }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- TAB 2: UNBILLED SERVICES -->
+    @if (activeTab() === 'UNBILLED') {
+      <div class="gcw-card invoices-card">
+        <div class="card-title-row">
+          <div>
+            <h3>⏳ Unbilled Fleet Washes ({{ unbilledBookings().length }})</h3>
+            <p class="text-muted text-sm m-0">Settle wash booking balances to instantly generate official PDF tax invoices.</p>
+          </div>
+        </div>
+
+        @if (unbilledBookings().length === 0) {
+          <div class="empty-invoices text-center py-4">
+            <div class="empty-icon">✓</div>
+            <h4 class="empty-title">All Services Invoiced</h4>
+            <p class="text-muted">No pending bookings awaiting invoicing. All completed corporate washes have active tax invoices.</p>
+            <button class="gcw-btn gcw-btn-secondary mt-2" (click)="activeTab.set('INVOICES')">
+              View Tax Invoices
+            </button>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="gcw-table">
+              <thead>
+                <tr>
+                  <th>Booking Ref</th>
+                  <th>Fleet Vehicle</th>
+                  <th>Service Package</th>
+                  <th>Scheduled Date</th>
+                  <th>Amount</th>
+                  <th class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (b of unbilledBookings(); track b.id) {
+                  <tr>
+                    <td>
+                      <strong>#{{ b.id }}</strong>
+                    </td>
+                    <td>
+                      <div class="veh-info-cell">
+                        <span class="veh-name">{{ getVehicleTitle(b.vehicleId) }}</span>
+                        <span class="veh-sub">{{ getVehiclePlate(b.vehicleId) }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span>{{ b.packageName || 'Eco Steam Wash' }}</span>
+                      @if (b.addOns && b.addOns.length > 0) {
+                        <span class="addons-tag">+{{ b.addOns.length }} add-on(s)</span>
+                      }
+                    </td>
+                    <td>
+                      {{ (b.scheduledAt || b.createdAt) | date:'mediumDate' }}
+                    </td>
+                    <td>
+                      <strong class="total-amt">{{ b.totalAmount | currency:'USD':'symbol':'1.2-2' }}</strong>
+                    </td>
+                    <td class="text-right">
+                      <button
+                        type="button"
+                        class="gcw-btn gcw-btn-sm gcw-btn-primary"
+                        (click)="openSettleModal(b)"
+                      >
+                        Settle & Invoice ({{ b.totalAmount | currency:'USD':'symbol':'1.0-0' }})
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- SETTLE & GENERATE INVOICE MODAL -->
+  @if (settlingBooking(); as b) {
+    <div class="modal-overlay" (click)="closeSettleModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">Settle & Generate Invoice for Booking #{{ b.id }}</h3>
+            <span class="text-muted text-sm">{{ getVehicleTitle(b.vehicleId) }} ({{ getVehiclePlate(b.vehicleId) }})</span>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeSettleModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="settle-summary-box">
+            <div class="summary-line">
+              <span>Service Package</span>
+              <strong>{{ b.packageName || 'Eco Steam Wash' }}</strong>
+            </div>
+            <div class="summary-line">
+              <span>Scheduled Date</span>
+              <span>{{ (b.scheduledAt || b.createdAt) | date:'mediumDate' }}</span>
+            </div>
+            <div class="summary-line total-line">
+              <span>Total Amount Due</span>
+              <strong class="total-due">{{ b.totalAmount | currency:'USD':'symbol':'1.2-2' }}</strong>
+            </div>
+          </div>
+
+          <div class="gcw-field mt-3">
+            <label class="gcw-label" for="settlePaymentToken">Select Corporate Payment Method</label>
+            <select id="settlePaymentToken" class="gcw-select" [(ngModel)]="paymentMethodToken">
+              <option value="tok_corp_visa">Corporate Visa Commercial (•••• 8819)</option>
+              <option value="tok_corp_mastercard">Corporate Mastercard Fleet (•••• 4022)</option>
+              <option value="tok_corp_ach">Corporate Direct ACH Transfer (Account •••• 1044)</option>
+              <option value="tok_corp_wallet">Enterprise Prepaid Wash Wallet</option>
+            </select>
+          </div>
+
+          <p class="settle-note">
+            📑 Upon payment authorization, an official tax invoice will be generated automatically and made available for instant PDF download.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeSettleModal()" [disabled]="settling()">
+            Cancel
+          </button>
+          <button type="button" class="gcw-btn gcw-btn-primary" (click)="confirmSettle()" [disabled]="settling()">
+            {{ settling() ? 'Processing & Generating Invoice…' : ('Authorize & Invoice (' + (b.totalAmount | currency:'USD':'symbol':'1.2-2') + ')') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- INVOICE DETAILS MODAL -->
+  @if (selectedInvoice(); as inv) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">Invoice {{ inv.invoiceNumber || ('#' + inv.id) }}</h3>
+            <span class="text-muted text-sm">Issued on {{ inv.issuedAt | date:'medium' }}</span>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="inv-modal-grid">
+            <div>
+              <span class="profile-lbl">Billed To</span>
+              <p class="profile-val">{{ organization()?.name }}</p>
+              <p class="text-sm text-muted">{{ organization()?.billingAddress || 'Organization Office' }}</p>
+            </div>
+            <div>
+              <span class="profile-lbl">Payment Status</span>
+              <p>
+                <span class="status-pill status-paid">PAID / SETTLED</span>
+              </p>
+              @if (inv.bookingId) {
+                <span class="text-sm text-muted">Booking Reference: #{{ inv.bookingId }}</span>
+              }
+            </div>
+          </div>
+
+          <h4 class="mt-4 mb-2">Itemized Breakdown</h4>
+          <table class="gcw-table item-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th class="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (inv.items && inv.items.length > 0) {
+                @for (item of inv.items; track $index) {
+                  <tr>
+                    <td>{{ item.description }}</td>
+                    <td class="text-right">{{ item.amount | currency:'USD':'symbol':'1.0-2' }}</td>
+                  </tr>
+                }
+              } @else {
+                <tr>
+                  <td>Corporate Fleet Car Wash Service</td>
+                  <td class="text-right">{{ inv.subtotal | currency:'USD':'symbol':'1.0-2' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td class="text-right"><strong>Subtotal:</strong></td>
+                <td class="text-right">{{ inv.subtotal | currency:'USD':'symbol':'1.0-2' }}</td>
+              </tr>
+              @if (inv.discountAmount > 0) {
+                <tr>
+                  <td class="text-right text-success">Discount / Corporate Benefit:</td>
+                  <td class="text-right text-success">-{{ inv.discountAmount | currency:'USD':'symbol':'1.0-2' }}</td>
+                </tr>
+              }
+              <tr class="total-row">
+                <td class="text-right"><strong>Total Paid:</strong></td>
+                <td class="text-right"><strong>{{ inv.totalAmount | currency:'USD':'symbol':'1.0-2' }}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeModal()">Close</button>
+          <button
+            type="button"
+            class="gcw-btn gcw-btn-primary"
+            (click)="downloadPdf(inv)"
+            [disabled]="downloadingId() === inv.id">
+            {{ downloadingId() === inv.id ? 'Generating…' : '📥 Download PDF' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

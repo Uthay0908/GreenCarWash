@@ -1,0 +1,143 @@
+<div class="reports-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Fleet Reports & Analytics</h1>
+      <p class="page-subtitle">Commercial fleet utilization, spending breakdowns, and environmental sustainability impact.</p>
+    </div>
+    <button class="gcw-btn gcw-btn-secondary" (click)="loadAllReportData()" [disabled]="loading()">
+      <span>↻ Refresh Analytics</span>
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="gcw-card state-card">
+      <div class="spinner"></div>
+      <p>Aggregating live telemetry and billing data across fleet services…</p>
+    </div>
+  } @else if (error()) {
+    <div class="gcw-card state-card error-card">
+      <div class="state-icon">⚠️</div>
+      <h3>Reports Unavailable</h3>
+      <p>{{ error() }}</p>
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadAllReportData()">Retry Analytics</button>
+    </div>
+  } @else {
+    <!-- Core Analytics Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card gcw-card">
+        <div class="kpi-top">
+          <span class="kpi-title">Fleet Assets</span>
+          <span class="kpi-icon">🚗</span>
+        </div>
+        <div class="kpi-val">{{ totalVehiclesCount() }}</div>
+        <span class="kpi-sub">Registered fleet vehicles</span>
+      </div>
+
+      <div class="kpi-card gcw-card">
+        <div class="kpi-top">
+          <span class="kpi-title">Completed Washes</span>
+          <span class="kpi-icon">✨</span>
+        </div>
+        <div class="kpi-val highlight-green">{{ completedBookingsCount() }}</div>
+        <span class="kpi-sub">Out of {{ totalBookingsCount() }} total orders</span>
+      </div>
+
+      <div class="kpi-card gcw-card">
+        <div class="kpi-top">
+          <span class="kpi-title">Total Fleet Expenditure</span>
+          <span class="kpi-icon">💳</span>
+        </div>
+        <div class="kpi-val">{{ totalLifetimeSpend() | currency:'USD':'symbol':'1.0-2' }}</div>
+        <span class="kpi-sub">{{ invoices().length }} tax invoice records</span>
+      </div>
+
+      <div class="kpi-card gcw-card">
+        <div class="kpi-top">
+          <span class="kpi-title">Water Conserved</span>
+          <span class="kpi-icon">💧</span>
+        </div>
+        <div class="kpi-val highlight-blue">{{ waterSavedLiters() | number }} L</div>
+        <span class="kpi-sub">Eco steam clean methodology</span>
+      </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+      <!-- Monthly Expenditure Chart -->
+      <div class="chart-card gcw-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Monthly Fleet Spending</h3>
+            <p class="chart-sub">Aggregated invoice settlements per billing cycle</p>
+          </div>
+          <span class="chart-badge">Live Invoices</span>
+        </div>
+
+        @if (monthlySpendStats().length === 0) {
+          <div class="empty-chart">
+            <span class="empty-icon">📊</span>
+            <p>No billing cycles recorded yet for spending charts.</p>
+          </div>
+        } @else {
+          <div class="bar-chart-container">
+            @for (m of monthlySpendStats(); track m.month) {
+              <div class="bar-row">
+                <span class="bar-label">{{ m.month }}</span>
+                <div class="bar-track">
+                  <div class="bar-fill" [style.width.%]="m.percentage"></div>
+                </div>
+                <span class="bar-value">{{ m.amount | currency:'USD':'symbol':'1.0-2' }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Service Status Distribution -->
+      <div class="chart-card gcw-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Service Outcome Distribution</h3>
+            <p class="chart-sub">Ratio of completed, in-flight, and cancelled washes</p>
+          </div>
+          <span class="chart-badge">Telemetry</span>
+        </div>
+
+        @if (statusDistribution().length === 0) {
+          <div class="empty-chart">
+            <span class="empty-icon">🍩</span>
+            <p>No wash reservations placed to calculate distribution.</p>
+          </div>
+        } @else {
+          <div class="distribution-list">
+            @for (item of statusDistribution(); track item.status) {
+              <div class="dist-item">
+                <div class="dist-info">
+                  <div class="dist-dot-row">
+                    <span class="dist-dot" [style.background]="item.color"></span>
+                    <span class="dist-label">{{ item.label }}</span>
+                  </div>
+                  <strong class="dist-count">{{ item.count }} ({{ item.percentage }}%)</strong>
+                </div>
+                <div class="dist-track">
+                  <div class="dist-fill" [style.width.%]="item.percentage" [style.background]="item.color"></div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="dist-summary-box">
+            <div class="box-stat">
+              <span class="stat-lbl">Avg Cost / Wash</span>
+              <strong class="stat-val">{{ averageWashCost() | currency:'USD':'symbol':'1.0-2' }}</strong>
+            </div>
+            <div class="box-stat">
+              <span class="stat-lbl">Active Bulk Requests</span>
+              <strong class="stat-val">{{ fleetBookings().length }}</strong>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

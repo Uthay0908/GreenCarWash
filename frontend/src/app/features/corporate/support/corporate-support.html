@@ -1,0 +1,183 @@
+<div class="support-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Corporate Support & Help Desk</h1>
+      <p class="page-subtitle">Submit operational inquiries, report fleet service discrepancies, and review ticket resolutions.</p>
+    </div>
+    <div class="header-actions">
+      <button class="gcw-btn gcw-btn-primary" (click)="openCreateModal()">
+        <span>+ Open New Ticket</span>
+      </button>
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadTickets()" [disabled]="loading()">
+        <span>↻ Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  @if (toast(); as t) {
+    <div class="toast-alert" [class.toast-error]="t.type === 'error'">
+      <span>{{ t.text }}</span>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="gcw-card state-card">
+      <div class="spinner"></div>
+      <p>Loading support requests from support service…</p>
+    </div>
+  } @else if (error()) {
+    <div class="gcw-card state-card error-card">
+      <div class="state-icon">⚠️</div>
+      <h3>Support Unavailable</h3>
+      <p>{{ error() }}</p>
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadTickets()">Retry</button>
+    </div>
+  } @else if (tickets().length === 0) {
+    <div class="gcw-card state-card">
+      <div class="state-icon">🎧</div>
+      <h3>No Open Support Tickets</h3>
+      <p>Your corporate fleet account has no pending support or service inquiry tickets.</p>
+      <button class="gcw-btn gcw-btn-primary" (click)="openCreateModal()">Create Ticket</button>
+    </div>
+  } @else {
+    <div class="table-card gcw-card">
+      <div class="table-responsive">
+        <table class="tickets-table">
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>Subject</th>
+              <th>Related Booking</th>
+              <th>Submitted</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (ticket of tickets(); track ticket.id) {
+              <tr>
+                <td>
+                  <strong class="ticket-id">#{{ ticket.id }}</strong>
+                </td>
+                <td>
+                  <div class="subject-cell">
+                    <span class="subject-title">{{ ticket.subject }}</span>
+                    <span class="subject-preview">{{ ticket.description }}</span>
+                  </div>
+                </td>
+                <td>
+                  @if (ticket.bookingId) {
+                    <span class="booking-tag">Booking #{{ ticket.bookingId }}</span>
+                  } @else {
+                    <span class="general-tag">General Account</span>
+                  }
+                </td>
+                <td>
+                  <span class="date-text">{{ ticket.createdAt | date:'mediumDate' }}</span>
+                </td>
+                <td>
+                  <app-status-badge [status]="ticket.status" />
+                </td>
+                <td>
+                  <button type="button" class="gcw-btn gcw-btn-sm gcw-btn-secondary" (click)="viewTicket(ticket)">
+                    View Ticket
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Create Ticket Modal -->
+  @if (showCreateModal()) {
+    <div class="modal-backdrop" (click)="closeCreateModal()">
+      <div class="modal-content gcw-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Open Corporate Support Ticket</h3>
+          <button type="button" class="close-btn" (click)="closeCreateModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="gcw-field">
+            <label class="gcw-label" for="ticketSubject">Subject / Issue Summary *</label>
+            <input
+              id="ticketSubject"
+              type="text"
+              class="gcw-input"
+              [(ngModel)]="newSubject"
+              placeholder="e.g. Schedule reschedule request for vehicle TN-09-AB-1234"
+              required
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="ticketBookingId">Related Booking ID (Optional)</label>
+            <input
+              id="ticketBookingId"
+              type="number"
+              class="gcw-input"
+              [(ngModel)]="newBookingId"
+              placeholder="e.g. 104"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="ticketDesc">Detailed Description *</label>
+            <textarea
+              id="ticketDesc"
+              rows="4"
+              class="gcw-textarea"
+              [(ngModel)]="newDescription"
+              placeholder="Please describe the issue or inquiry in detail…"
+              required
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeCreateModal()" [disabled]="submittingTicket()">Cancel</button>
+          <button type="button" class="gcw-btn gcw-btn-primary" (click)="submitTicket()" [disabled]="submittingTicket()">
+            {{ submittingTicket() ? 'Submitting…' : 'Submit Ticket' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- View Ticket Modal -->
+  @if (selectedTicket(); as t) {
+    <div class="modal-backdrop" (click)="closeDetailModal()">
+      <div class="modal-content gcw-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">Ticket #{{ t.id }}: {{ t.subject }}</h3>
+            <p class="modal-sub">Submitted: {{ t.createdAt | date:'medium' }}</p>
+          </div>
+          <button type="button" class="close-btn" (click)="closeDetailModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="ticket-status-bar">
+            <span>Status:</span>
+            <app-status-badge [status]="t.status" />
+          </div>
+
+          <div class="ticket-desc-box">
+            <h5 class="desc-heading">Description</h5>
+            <p class="desc-body">{{ t.description }}</p>
+          </div>
+
+          @if (t.resolution) {
+            <div class="ticket-resolution-box">
+              <h5 class="res-heading">Resolution & Response</h5>
+              <p class="res-body">{{ t.resolution }}</p>
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeDetailModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
