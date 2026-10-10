@@ -1,0 +1,42 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Create Support Ticket</h1>
+    <p>Tell us what's going on and we'll get back to you soon.</p>
+  </div>
+</div>
+
+<div class="gcw-card form-card">
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="gcw-field">
+      <label class="gcw-label" for="subject">Subject</label>
+      <input id="subject" type="text" class="gcw-input" formControlName="subject" placeholder="Brief summary of your issue" />
+      @if (f.subject.invalid && f.subject.touched) {
+        <div class="gcw-field-error">Subject must be at least 4 characters.</div>
+      }
+    </div>
+
+    <div class="gcw-field">
+      <label class="gcw-label" for="priority">Priority</label>
+      <select id="priority" class="gcw-select" formControlName="priority">
+        @for (p of priorities; track p) {
+          <option [value]="p">{{ p }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="gcw-field">
+      <label class="gcw-label" for="description">Description</label>
+      <textarea id="description" class="gcw-textarea" rows="5" formControlName="description" placeholder="Describe your issue in detail"></textarea>
+      @if (f.description.invalid && f.description.touched) {
+        <div class="gcw-field-error">Please provide at least 10 characters of detail.</div>
+      }
+    </div>
+
+    <div class="form-actions">
+      <a routerLink="/support" class="gcw-btn gcw-btn-secondary">Cancel</a>
+      <button type="submit" class="gcw-btn gcw-btn-primary" [disabled]="submitting()">
+        {{ submitting() ? 'Submitting…' : 'Submit Ticket' }}
+      </button>
+    </div>
+  </form>
+</div>
