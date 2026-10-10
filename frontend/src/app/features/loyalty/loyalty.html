@@ -1,0 +1,640 @@
+<div class="loyalty-hub-view">
+  @if (actionToast()) {
+    <div class="loyalty-floating-toast" role="alert">
+      <span class="toast-sparkle">✨</span>
+      <span class="toast-text">{{ actionToast() }}</span>
+    </div>
+  }
+
+  <!-- Top Tabs Strip -->
+  <div class="loyalty-tabs-bar">
+    <button
+      type="button"
+      class="l-tab-btn"
+      [class.active]="activeTab() === 'WATER_IMPACT'"
+      (click)="setTab('WATER_IMPACT')">
+      💧 Water Savings
+    </button>
+    <button
+      type="button"
+      class="l-tab-btn"
+      [class.active]="activeTab() === 'LEADERBOARD'"
+      (click)="setTab('LEADERBOARD')">
+      🏆 Leaderboard
+    </button>
+    <button
+      type="button"
+      class="l-tab-btn"
+      [class.active]="activeTab() === 'WALLET'"
+      (click)="setTab('WALLET')">
+      💳 Wallet &amp; Points
+    </button>
+    <button
+      type="button"
+      class="l-tab-btn"
+      [class.active]="activeTab() === 'MEMBERSHIP'"
+      (click)="setTab('MEMBERSHIP')">
+      ⭐ Membership
+    </button>
+    <button
+      type="button"
+      class="l-tab-btn"
+      [class.active]="activeTab() === 'REFERRAL'"
+      (click)="setTab('REFERRAL')">
+      👥 Refer &amp; Earn
+    </button>
+  </div>
+
+  <!-- TAB 1: WATER SAVING DASHBOARD (Screen 21) -->
+  @if (activeTab() === 'WATER_IMPACT') {
+    <div class="water-impact-screen">
+      <div class="water-top-card">
+        <div class="card-head-row">
+          <h2 class="section-title">Your Eco Impact</h2>
+          <div class="period-pills">
+            <button
+              type="button"
+              class="p-pill"
+              [class.active]="waterPeriod() === 'THIS_MONTH'"
+              (click)="waterPeriod.set('THIS_MONTH')">
+              This Month
+            </button>
+            <button
+              type="button"
+              class="p-pill"
+              [class.active]="waterPeriod() === 'ALL_TIME'"
+              (click)="waterPeriod.set('ALL_TIME')">
+              All Time
+            </button>
+            <button
+              type="button"
+              class="p-pill"
+              [class.active]="waterPeriod() === 'MY_CITY'"
+              (click)="waterPeriod.set('MY_CITY')">
+              My City
+            </button>
+          </div>
+        </div>
+
+        <!-- Big Circular Water Meter graphic matching Screen 21 -->
+        <div class="water-meter-wrap">
+          <div class="water-circle-ring">
+            <div class="water-ring-inner">
+              <span class="water-drop-large">💧</span>
+              <div class="water-val-text">{{ savedWaterLiters() }} L</div>
+              <span class="water-sub-text">Water Saved</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Breakdown Stats matching Screen 21 -->
+        <div class="water-three-stats-row">
+          <div class="w-stat-col">
+            <span class="w-stat-lbl">Allocated</span>
+            <strong class="w-stat-val">{{ allocatedWaterLiters() }} L</strong>
+          </div>
+          <div class="v-divider"></div>
+          <div class="w-stat-col">
+            <span class="w-stat-lbl">Used</span>
+            <strong class="w-stat-val">{{ usedWaterLiters() }} L</strong>
+          </div>
+          <div class="v-divider"></div>
+          <div class="w-stat-col">
+            <span class="w-stat-lbl">Saved</span>
+            <strong class="w-stat-val font-green">{{ savedWaterLiters() }} L</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fun Fact Bathtub Banner matching Screen 21 -->
+      <div class="bathtub-banner-card">
+        <span class="bathtub-ico">🛁</span>
+        <div class="bathtub-text">
+          <span class="bt-sub">You saved enough water to</span>
+          <strong class="bt-bold">Fill 3 bathtubs!</strong>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 2: LEADERBOARD (Screen 22) -->
+  @if (activeTab() === 'LEADERBOARD') {
+    <div class="leaderboard-screen">
+      <div class="card-head-row">
+        <h2 class="section-title">Water Saving Leaderboard</h2>
+        <div class="period-pills">
+          <button
+            type="button"
+            class="p-pill"
+            [class.active]="leaderboardPeriod() === 'THIS_MONTH'"
+            (click)="setLeaderboardPeriod('THIS_MONTH')">
+            This Month
+          </button>
+          <button
+            type="button"
+            class="p-pill"
+            [class.active]="leaderboardPeriod() === 'ALL_TIME'"
+            (click)="setLeaderboardPeriod('ALL_TIME')">
+            All Time
+          </button>
+          <button
+            type="button"
+            class="p-pill"
+            [class.active]="leaderboardPeriod() === 'MY_AREA'"
+            (click)="setLeaderboardPeriod('MY_AREA')">
+            My Area
+          </button>
+        </div>
+      </div>
+
+      <!-- Podium Top 3 matching Screen 22 -->
+      <div class="podium-container">
+        <!-- 2nd Place: Priyankaa (Left) -->
+        <div class="podium-step step-second">
+          <div class="podium-avatar-wrap">
+            <img [src]="podium()[1].avatar" [alt]="podium()[1].name" class="p-avatar" />
+            <span class="medal-tag medal-silver">🥈 2</span>
+          </div>
+          <strong class="p-name">{{ podium()[1].name }}</strong>
+          <span class="p-saved">{{ podium()[1].litersSaved }} L</span>
+          <div class="podium-pedestal pedestal-2">2</div>
+        </div>
+
+        <!-- 1st Place: Karthik (Center) -->
+        <div class="podium-step step-first">
+          <div class="podium-avatar-wrap first-crown">
+            <span class="crown-ico">👑</span>
+            <img [src]="podium()[0].avatar" [alt]="podium()[0].name" class="p-avatar" />
+            <span class="medal-tag medal-gold">🥇 1</span>
+          </div>
+          <strong class="p-name">{{ podium()[0].name }}</strong>
+          <span class="p-saved font-gold">{{ podium()[0].litersSaved }} L</span>
+          <div class="podium-pedestal pedestal-1">1</div>
+        </div>
+
+        <!-- 3rd Place: Divya (Right) -->
+        <div class="podium-step step-third">
+          <div class="podium-avatar-wrap">
+            <img [src]="podium()[2].avatar" [alt]="podium()[2].name" class="p-avatar" />
+            <span class="medal-tag medal-bronze">🥉 3</span>
+          </div>
+          <strong class="p-name">{{ podium()[2].name }}</strong>
+          <span class="p-saved">{{ podium()[2].litersSaved }} L</span>
+          <div class="podium-pedestal pedestal-3">3</div>
+        </div>
+      </div>
+
+      <!-- Ranking List Below matching Screen 22 -->
+      <div class="ranking-table-card">
+        @for (user of leaderboardList(); track user.rank) {
+          <div class="ranking-row">
+            <span class="r-rank-num">{{ user.rank }}</span>
+            <img [src]="user.avatar" [alt]="user.name" class="r-avatar-thumb" />
+            <strong class="r-name">{{ user.name }}</strong>
+            <span class="r-score-val">{{ user.litersSaved }} L</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TAB 3: WALLET & REWARDS (Screen 18) -->
+  @if (activeTab() === 'WALLET') {
+    <div class="wallet-rewards-screen">
+      <div class="wallet-balance-card">
+        <div class="wb-top-line">
+          <span class="wb-lbl">Wallet Balance</span>
+          <button type="button" class="btn-topup" (click)="openTopUp()">+ Top Up</button>
+        </div>
+        <div class="wb-amount">${{ wallet()?.balance?.toFixed(2) || '245.00' }}</div>
+      </div>
+
+      <div class="points-offers-dual">
+        <div class="po-card">
+          <span class="po-lbl">Loyalty Points</span>
+          <strong class="po-val">{{ account()?.pointsBalance || '1,250' }}</strong>
+          <button type="button" class="btn-po-link" (click)="openRedeem()">Redeem</button>
+        </div>
+        <div class="po-card">
+          <span class="po-lbl">Available Offers</span>
+          <strong class="po-val">4</strong>
+          <button type="button" class="btn-po-link" (click)="openOffers()">View Offers</button>
+        </div>
+      </div>
+
+      <div class="wallet-actions-menu">
+        <div class="w-menu-item" (click)="openHistory()">
+          <span class="wm-ico">📜</span>
+          <span class="wm-txt">Transaction History</span>
+          <span class="wm-arrow">&gt;</span>
+        </div>
+        <div class="w-menu-item" (click)="openPromoModal()">
+          <span class="wm-ico">🏷️</span>
+          <span class="wm-txt">Apply Promo Code</span>
+          <span class="wm-arrow">&gt;</span>
+        </div>
+        <div class="w-menu-item" (click)="setTab('REFERRAL')">
+          <span class="wm-ico">👥</span>
+          <span class="wm-txt">Refer &amp; Earn $15</span>
+          <span class="wm-arrow">&gt;</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 4: MEMBERSHIP (Screen 19) -->
+  @if (activeTab() === 'MEMBERSHIP') {
+    <div class="membership-screen">
+      <div class="membership-vip-card">
+        <div class="vip-badge-row">
+          <span class="crown-badge">👑 {{ membershipTier() }}</span>
+          <span class="valid-till">Valid till {{ membershipExpiry() }}</span>
+        </div>
+        <h3 class="vip-title">Exclusive Green Care Tier</h3>
+      </div>
+
+      <div class="membership-perks-card">
+        <h4 class="perks-title">Your Member Benefits</h4>
+        <div class="perks-list">
+          <div class="perk-row"><span class="chk-green">✓</span> <span>10% off on all eco wash packages</span></div>
+          <div class="perk-row"><span class="chk-green">✓</span> <span>Priority booking slot dispatch</span></div>
+          <div class="perk-row"><span class="chk-green">✓</span> <span>Free interior steam detox (2 per month)</span></div>
+          <div class="perk-row"><span class="chk-green">✓</span> <span>Double loyalty points on every dollar spent</span></div>
+          <div class="perk-row"><span class="chk-green">✓</span> <span>Exclusive promotional flash offers</span></div>
+        </div>
+
+        <button type="button" class="btn-manage-vip" (click)="openManageMembership()">Manage Membership &amp; Tiers</button>
+      </div>
+
+      <!-- Tier Plans Comparison Section -->
+      <div class="membership-plans-section">
+        <h4 class="perks-title">Explore &amp; Upgrade Membership Tiers</h4>
+        <div class="plans-cards-row">
+          @for (plan of displayPlans(); track plan.tier) {
+            <div class="tier-card" [class.active-tier]="account()?.tier === plan.tier">
+              <div class="tier-card-header">
+                <span class="tier-badge-pill">{{ plan.tier }}</span>
+                @if (account()?.tier === plan.tier) {
+                  <span class="current-plan-tag">Current Plan</span>
+                }
+              </div>
+              <p class="tier-desc">{{ plan.description }}</p>
+              <div class="tier-points-req">
+                <strong>{{ plan.minLifetimePoints }}</strong> Lifetime Pts Required
+              </div>
+              <ul class="tier-benefits-list">
+                @for (benefit of plan.benefits; track benefit) {
+                  <li><span class="chk-green">✓</span> {{ benefit }}</li>
+                }
+              </ul>
+              @if (account()?.tier === plan.tier) {
+                <button type="button" class="btn-tier-action active" disabled>Enrolled</button>
+              } @else {
+                <button type="button" class="btn-tier-action" (click)="activateTier(plan.tier)">Switch to {{ plan.tier }}</button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 5: REFERRAL PROGRAM (Screen 20) -->
+  @if (activeTab() === 'REFERRAL') {
+    <div class="referral-screen">
+      @if (copyToast()) {
+        <div class="referral-toast-alert">
+          <span>✓</span> {{ copyToast() }}
+        </div>
+      }
+
+      <div class="referral-hero-card">
+        <span class="ref-hero-ico">🎁</span>
+        <h3 class="ref-title">Refer &amp; Earn</h3>
+        <p class="ref-sub">Invite friends and you both get $15 wallet credit when they complete their first wash!</p>
+
+        <div class="ref-code-box">
+          <span class="code-lbl">Your unique referral code:</span>
+          <div class="code-pill-action-row">
+            <span class="code-pill">{{ referralCode() }}</span>
+            <button type="button" class="btn-copy-code" (click)="copyReferralCode()" title="Copy Code">
+              📋 Copy Code
+            </button>
+          </div>
+        </div>
+
+        <div class="referral-share-buttons">
+          <button type="button" class="btn-share-whatsapp" (click)="shareViaWhatsApp()">
+            📲 Share via WhatsApp
+          </button>
+          <button type="button" class="btn-share-generic" (click)="shareNative()">
+            🔗 Share Link
+          </button>
+        </div>
+      </div>
+
+      <div class="referral-stats-card">
+        <div class="ref-stat-col">
+          <strong class="r-stat-num">{{ friendsJoined() }}</strong>
+          <span class="r-stat-lbl">Friends Joined</span>
+        </div>
+        <div class="v-divider"></div>
+        <div class="ref-stat-col">
+          <strong class="r-stat-num font-green">${{ referralEarned() }}</strong>
+          <span class="r-stat-lbl">Total Earned</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL 1: TOP UP MODAL -->
+  @if (showTopUpModal()) {
+    <div class="loyalty-modal-backdrop" (click)="closeTopUp()">
+      <div class="loyalty-modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">💳 Top Up Green Wallet</h3>
+          <button type="button" class="btn-close-modal" (click)="closeTopUp()">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-subtitle">Instant wallet balance for frictionless, 1-click eco steam wash bookings.</p>
+
+          <label class="modal-field-label">Quick Select Amount</label>
+          <div class="topup-chips-row">
+            <button type="button" class="chip-btn" [class.selected]="topUpAmount() === 25 && !customTopUp()" (click)="selectTopUpAmount(25)">$25</button>
+            <button type="button" class="chip-btn" [class.selected]="topUpAmount() === 50 && !customTopUp()" (click)="selectTopUpAmount(50)">$50</button>
+            <button type="button" class="chip-btn" [class.selected]="topUpAmount() === 100 && !customTopUp()" (click)="selectTopUpAmount(100)">$100</button>
+            <button type="button" class="chip-btn" [class.selected]="topUpAmount() === 200 && !customTopUp()" (click)="selectTopUpAmount(200)">$200</button>
+          </div>
+
+          <label class="modal-field-label">Or Custom Amount</label>
+          <div class="input-with-symbol">
+            <span class="currency-tag">$</span>
+            <input
+              type="number"
+              min="5"
+              max="2000"
+              class="modal-text-input"
+              placeholder="e.g. 75"
+              [ngModel]="customTopUp()"
+              (ngModelChange)="customTopUp.set($event)"
+            />
+          </div>
+
+          <label class="modal-field-label">Select Payment Method</label>
+          <div class="payment-method-row">
+            <button
+              type="button"
+              class="pay-method-btn"
+              [class.selected]="topUpPaymentMethod() === 'CARD'"
+              (click)="topUpPaymentMethod.set('CARD')">
+              💳 Card / Debit
+            </button>
+            <button
+              type="button"
+              class="pay-method-btn"
+              [class.selected]="topUpPaymentMethod() === 'UPI'"
+              (click)="topUpPaymentMethod.set('UPI')">
+              ⚡ Instant UPI
+            </button>
+            <button
+              type="button"
+              class="pay-method-btn"
+              [class.selected]="topUpPaymentMethod() === 'NETBANKING'"
+              (click)="topUpPaymentMethod.set('NETBANKING')">
+              🏦 Net Banking
+            </button>
+          </div>
+
+          <div class="balance-summary-box">
+            <div class="summary-line">
+              <span>Current Balance:</span>
+              <strong>${{ wallet()?.balance?.toFixed(2) || '0.00' }}</strong>
+            </div>
+            <div class="summary-line">
+              <span>Top Up Credit:</span>
+              <strong class="font-green">+${{ (customTopUp() ? (+customTopUp() || 0) : topUpAmount()).toFixed(2) }}</strong>
+            </div>
+            <div class="summary-line total-line">
+              <span>New Projected Balance:</span>
+              <strong class="font-green">${{ ((wallet()?.balance || 0) + (customTopUp() ? (+customTopUp() || 0) : topUpAmount())).toFixed(2) }}</strong>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="closeTopUp()">Cancel</button>
+          <button type="button" class="btn-modal-confirm" (click)="confirmTopUp()">Confirm &amp; Add Funds</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL 2: REDEEM POINTS MODAL -->
+  @if (showRedeemModal()) {
+    <div class="loyalty-modal-backdrop" (click)="closeRedeem()">
+      <div class="loyalty-modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">⭐ Convert Loyalty Points</h3>
+          <button type="button" class="btn-close-modal" (click)="closeRedeem()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="points-balance-info-card">
+            <span class="pbi-lbl">Available Loyalty Balance</span>
+            <strong class="pbi-pts">{{ account()?.pointsBalance || 0 }} pts</strong>
+            <span class="pbi-rate">100 Loyalty Points = $1.00 GreenCarWash Wallet Credit</span>
+          </div>
+
+          <label class="modal-field-label">Select Points to Convert</label>
+          <div class="points-chips-row">
+            <button
+              type="button"
+              class="chip-btn"
+              [class.selected]="redeemPointsAmount() === 250"
+              (click)="selectRedeemAmount(250)">
+              250 pts ($2.50)
+            </button>
+            <button
+              type="button"
+              class="chip-btn"
+              [class.selected]="redeemPointsAmount() === 500"
+              (click)="selectRedeemAmount(500)">
+              500 pts ($5.00)
+            </button>
+            <button
+              type="button"
+              class="chip-btn"
+              [class.selected]="redeemPointsAmount() === 1000"
+              (click)="selectRedeemAmount(1000)">
+              1,000 pts ($10.00)
+            </button>
+            <button
+              type="button"
+              class="chip-btn"
+              [class.selected]="redeemPointsAmount() === (account()?.pointsBalance || 0)"
+              (click)="selectRedeemAmount(account()?.pointsBalance || 0)">
+              Max All
+            </button>
+          </div>
+
+          <div class="balance-summary-box">
+            <div class="summary-line">
+              <span>Points Deducted:</span>
+              <strong class="font-red">-{{ redeemPointsAmount() }} pts</strong>
+            </div>
+            <div class="summary-line total-line">
+              <span>Wallet Credit Added:</span>
+              <strong class="font-green">+${{ (redeemPointsAmount() / 100).toFixed(2) }}</strong>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="closeRedeem()">Cancel</button>
+          <button type="button" class="btn-modal-confirm" (click)="confirmRedeem()">Redeem to Wallet</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL 3: VIEW OFFERS MODAL -->
+  @if (showOffersModal()) {
+    <div class="loyalty-modal-backdrop" (click)="closeOffers()">
+      <div class="loyalty-modal-dialog modal-wide" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">🎁 Exclusive Green Offers &amp; Coupons</h3>
+          <button type="button" class="btn-close-modal" (click)="closeOffers()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="offers-grid-list">
+            @for (offer of availableOffers(); track offer.code) {
+              <div class="offer-card-item">
+                <div class="offer-badge-pill">{{ offer.discount }}</div>
+                <div class="offer-body-info">
+                  <h4 class="offer-name">{{ offer.title }}</h4>
+                  <p class="offer-desc">{{ offer.description }}</p>
+                  <span class="offer-exp">{{ offer.expires }}</span>
+                </div>
+                <div class="offer-action-col">
+                  <span class="offer-code-chip">{{ offer.code }}</span>
+                  <button type="button" class="btn-copy-offer" (click)="copyOfferCode(offer.code)">Copy Code</button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-confirm" (click)="closeOffers()">Done</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL 4: TRANSACTION HISTORY MODAL -->
+  @if (showHistoryModal()) {
+    <div class="loyalty-modal-backdrop" (click)="closeHistory()">
+      <div class="loyalty-modal-dialog modal-wide" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">📜 Wallet &amp; Points Transaction History</h3>
+          <button type="button" class="btn-close-modal" (click)="closeHistory()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="tx-history-container">
+            @for (tx of transactions(); track tx.id) {
+              <div class="tx-row-card">
+                <div class="tx-icon-col">
+                  <span class="tx-type-icon">{{ tx.type === 'CREDIT' ? '💰' : '🚿' }}</span>
+                </div>
+                <div class="tx-detail-col">
+                  <strong class="tx-reason-title">{{ tx.reason }}</strong>
+                  <span class="tx-timestamp">{{ tx.createdAt | date:'medium' }}</span>
+                </div>
+                <div class="tx-amount-col" [class.tx-credit]="tx.type === 'CREDIT'" [class.tx-debit]="tx.type === 'DEBIT'">
+                  {{ tx.type === 'CREDIT' ? '+' : '-' }}${{ tx.amount?.toFixed(2) }}
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-tx-placeholder">
+                <span class="empty-icon">🍃</span>
+                <p>No transactions found in this period.</p>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-confirm" (click)="closeHistory()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL 5: APPLY PROMO MODAL -->
+  @if (showPromoModal()) {
+    <div class="loyalty-modal-backdrop" (click)="closePromoModal()">
+      <div class="loyalty-modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">🏷️ Apply Promo Code</h3>
+          <button type="button" class="btn-close-modal" (click)="closePromoModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-subtitle">Enter any promotional discount code to activate savings for your next booking.</p>
+          <div class="input-with-symbol">
+            <span class="currency-tag">🎟️</span>
+            <input
+              type="text"
+              class="modal-text-input uppercase-input"
+              placeholder="e.g. SPRINGCLEAN"
+              [ngModel]="promoCodeInput()"
+              (ngModelChange)="promoCodeInput.set($event)"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="closePromoModal()">Cancel</button>
+          <button type="button" class="btn-modal-confirm" (click)="confirmPromo()">Apply Promo</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL 6: MANAGE MEMBERSHIP TIERS MODAL -->
+  @if (showMembershipModal()) {
+    <div class="loyalty-modal-backdrop" (click)="closeMembershipModal()">
+      <div class="loyalty-modal-dialog modal-extra-wide" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">👑 Manage &amp; Upgrade Membership</h3>
+          <button type="button" class="btn-close-modal" (click)="closeMembershipModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-subtitle">Choose your ideal sustainability plan to unlock exclusive discounts and perks.</p>
+          <div class="plans-cards-row">
+            @for (plan of displayPlans(); track plan.tier) {
+              <div class="tier-card" [class.active-tier]="account()?.tier === plan.tier">
+                <div class="tier-card-header">
+                  <span class="tier-badge-pill">{{ plan.tier }}</span>
+                  @if (account()?.tier === plan.tier) {
+                    <span class="current-plan-tag">Current Plan</span>
+                  }
+                </div>
+                <p class="tier-desc">{{ plan.description }}</p>
+                <div class="tier-points-req">
+                  <strong>{{ plan.minLifetimePoints }}</strong> Lifetime Pts Required
+                </div>
+                <ul class="tier-benefits-list">
+                  @for (benefit of plan.benefits; track benefit) {
+                    <li><span class="chk-green">✓</span> {{ benefit }}</li>
+                  }
+                </ul>
+                @if (account()?.tier === plan.tier) {
+                  <button type="button" class="btn-tier-action active" disabled>Enrolled</button>
+                } @else {
+                  <button type="button" class="btn-tier-action" (click)="activateTier(plan.tier)">Switch to {{ plan.tier }}</button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-confirm" (click)="closeMembershipModal()">Done</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
