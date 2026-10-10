@@ -1,0 +1,548 @@
+<div class="gcw-profile-page">
+  <!-- Top Profile Hero Banner -->
+  <div class="profile-hero-card">
+    <div class="hero-avatar-wrapper">
+      <div class="avatar-display-circle">
+        @if (avatarUrl()) {
+          <img [src]="avatarUrl()" [alt]="form.value.fullName || 'Customer Profile'" class="profile-avatar-img" />
+        } @else {
+          <span class="avatar-letter">{{ customerInitials() }}</span>
+        }
+      </div>
+
+      <!-- Avatar Upload Button Overlay -->
+      <label class="btn-avatar-upload" title="Upload profile photo">
+        <span>📷</span>
+        <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onAvatarSelected($event)" style="display:none;" />
+      </label>
+
+      @if (avatarUrl()) {
+        <button type="button" class="btn-avatar-remove" (click)="removeAvatar()" title="Remove profile picture">
+          ✕
+        </button>
+      }
+    </div>
+
+    <div class="hero-user-details">
+      <div class="user-name-row">
+        <h1 class="profile-full-name">{{ form.value.fullName || auth.currentUser()?.fullName || 'Valued Customer' }}</h1>
+        <span class="user-role-badge">Verified Customer</span>
+      </div>
+      <div class="user-meta-chips">
+        <span class="meta-chip">✉️ {{ auth.currentUser()?.email }}</span>
+        <span class="meta-chip">📞 {{ form.value.phone || auth.currentUser()?.phone || 'Add phone number' }}</span>
+        <span class="meta-chip eco-chip">🌱 Eco Guardian (240L Saved)</span>
+      </div>
+    </div>
+  </div>
+
+  @if (avatarMessage()) {
+    <div class="alert-box alert-success">
+      <span class="alert-icon">✓</span>
+      <span>{{ avatarMessage() }}</span>
+    </div>
+  }
+
+  <!-- Tab Navigation Strip -->
+  <div class="profile-nav-tabs">
+    <button
+      type="button"
+      class="p-tab-btn"
+      [class.active]="activeTab() === 'DETAILS'"
+      (click)="activeTab.set('DETAILS')"
+    >
+      👤 Personal Info
+    </button>
+    <button
+      type="button"
+      class="p-tab-btn"
+      [class.active]="activeTab() === 'SECURITY'"
+      (click)="activeTab.set('SECURITY')"
+    >
+      🔒 Security &amp; Password
+    </button>
+    <button
+      type="button"
+      class="p-tab-btn"
+      [class.active]="activeTab() === 'VEHICLES'"
+      (click)="activeTab.set('VEHICLES')"
+    >
+      🚗 My Vehicles ({{ vehicles().length }})
+    </button>
+    <button
+      type="button"
+      class="p-tab-btn"
+      [class.active]="activeTab() === 'ADDRESSES'"
+      (click)="activeTab.set('ADDRESSES')"
+    >
+      📍 Saved Addresses ({{ addresses().length }})
+    </button>
+    <button
+      type="button"
+      class="p-tab-btn"
+      [class.active]="activeTab() === 'WASH_PHOTOS'"
+      (click)="activeTab.set('WASH_PHOTOS')"
+    >
+      📸 Service Wash Photos ({{ washBookingsWithPhotos().length }})
+    </button>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- TAB 1: PERSONAL DETAILS                        -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'DETAILS') {
+    <app-customer-card
+      title="Personal Details"
+      subtitle="Update your contact information for bookings and doorstep receipts"
+      headerIcon="👤"
+    >
+      @if (message()) {
+        <div class="alert-box alert-success">
+          <span class="alert-icon">✓</span>
+          <span>{{ message() }}</span>
+        </div>
+      }
+      @if (error()) {
+        <div class="alert-box alert-error">
+          <span class="alert-icon">⚠️</span>
+          <span>{{ error() }}</span>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="save()" novalidate class="profile-form">
+        <div class="form-row-dual">
+          <div class="gcw-field">
+            <label class="gcw-label" for="fullName">Full Name *</label>
+            <input
+              id="fullName"
+              type="text"
+              class="gcw-input"
+              formControlName="fullName"
+              placeholder="e.g. Johnathan Doe"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="phone">Phone Number *</label>
+            <input
+              id="phone"
+              type="tel"
+              class="gcw-input"
+              formControlName="phone"
+              placeholder="e.g. +1 (555) 234-5678"
+            />
+          </div>
+        </div>
+
+        <div class="gcw-field">
+          <label class="gcw-label" for="email">Account Email Address (Locked)</label>
+          <input
+            id="email"
+            type="email"
+            class="gcw-input disabled-input"
+            formControlName="email"
+            title="Email address cannot be changed"
+          />
+          <small class="field-hint">Email is linked to your authentication credentials.</small>
+        </div>
+
+        <div class="form-actions">
+          <app-customer-button
+            type="submit"
+            variant="primary"
+            size="md"
+            [disabled]="saving()"
+            [loading]="saving()"
+            icon="💾"
+          >
+            Save Changes
+          </app-customer-button>
+        </div>
+      </form>
+    </app-customer-card>
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 2: SECURITY & PASSWORD                     -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'SECURITY') {
+    <app-customer-card
+      title="Change Password"
+      subtitle="Enhance account security with a strong, updated password"
+      headerIcon="🔒"
+    >
+      @if (passwordMessage()) {
+        <div class="alert-box alert-success">
+          <span class="alert-icon">✓</span>
+          <span>{{ passwordMessage() }}</span>
+        </div>
+      }
+      @if (passwordError()) {
+        <div class="alert-box alert-error">
+          <span class="alert-icon">⚠️</span>
+          <span>{{ passwordError() }}</span>
+        </div>
+      }
+
+      <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate class="profile-form">
+        <div class="gcw-field">
+          <label class="gcw-label" for="currentPassword">Current Password *</label>
+          <div class="password-input-wrap">
+            <input
+              id="currentPassword"
+              [type]="showCurrentPassword() ? 'text' : 'password'"
+              class="gcw-input"
+              formControlName="currentPassword"
+              placeholder="Enter current password"
+            />
+            <button
+              type="button"
+              class="btn-toggle-eye"
+              (click)="showCurrentPassword.set(!showCurrentPassword())"
+            >
+              {{ showCurrentPassword() ? '👁️' : '🔒' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-row-dual">
+          <div class="gcw-field">
+            <label class="gcw-label" for="newPassword">New Password *</label>
+            <div class="password-input-wrap">
+              <input
+                id="newPassword"
+                [type]="showNewPassword() ? 'text' : 'password'"
+                class="gcw-input"
+                formControlName="newPassword"
+                placeholder="At least 8 characters"
+              />
+              <button
+                type="button"
+                class="btn-toggle-eye"
+                (click)="showNewPassword.set(!showNewPassword())"
+              >
+                {{ showNewPassword() ? '👁️' : '🔒' }}
+              </button>
+            </div>
+            <small class="field-hint">Must contain at least 1 uppercase, 1 lowercase, and 1 number.</small>
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="confirmPassword">Confirm New Password *</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              class="gcw-input"
+              formControlName="confirmPassword"
+              placeholder="Re-type new password"
+            />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <app-customer-button
+            type="submit"
+            variant="primary"
+            size="md"
+            [disabled]="passwordSaving()"
+            [loading]="passwordSaving()"
+            icon="🔑"
+          >
+            Update Password
+          </app-customer-button>
+        </div>
+      </form>
+    </app-customer-card>
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 3: VEHICLES IN PROFILE                     -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'VEHICLES') {
+    <div class="profile-section-card">
+      <div class="section-card-header">
+        <div>
+          <h3 class="section-card-title">Registered Vehicles</h3>
+          <p class="section-card-desc">Your garage vehicles ready for doorstep steam washing</p>
+        </div>
+        <a routerLink="/vehicles/new" [queryParams]="{ returnUrl: '/dashboard/profile' }" class="btn-add-section-item">
+          + Add Vehicle
+        </a>
+      </div>
+
+      @if (vehiclesLoading()) {
+        <div class="section-loading-box">Loading vehicles…</div>
+      } @else if (vehicles().length === 0) {
+        <div class="empty-sub-box">
+          <span class="empty-icon-sub">🚗</span>
+          <strong>No vehicles added yet</strong>
+          <p>Register your car or SUV to book quick doorstep washes.</p>
+          <a routerLink="/vehicles/new" [queryParams]="{ returnUrl: '/dashboard/profile' }" class="btn-sub-action">
+            Register Vehicle
+          </a>
+        </div>
+      } @else {
+        <div class="vehicle-card-subgrid">
+          @for (v of vehicles(); track v.id) {
+            <div class="vehicle-sub-card">
+              <div class="vsub-photo-box">
+                @if (v.imageUrl) {
+                  <img [src]="v.imageUrl" [alt]="v.make + ' ' + v.model" class="vsub-img" />
+                } @else {
+                  <span class="vsub-placeholder">🚗</span>
+                }
+              </div>
+              <div class="vsub-info-col">
+                <div class="vsub-title-row">
+                  <strong class="vsub-name">{{ v.make }} {{ v.model }}</strong>
+                  <span class="vsub-type-chip">{{ v.vehicleType }}</span>
+                </div>
+                <div class="vsub-meta-row">
+                  <span class="vsub-plate">USA • {{ v.licensePlate }}</span>
+                  @if (v.color) {
+                    <span class="vsub-color">🎨 {{ v.color }}</span>
+                  }
+                </div>
+                <div class="vsub-actions-row">
+                  <a [routerLink]="['/vehicles', v.id, 'edit']" [queryParams]="{ returnUrl: '/dashboard/profile' }" class="btn-vsub-edit">
+                    ✏️ Edit
+                  </a>
+                  <button type="button" class="btn-vsub-del" (click)="promptDeleteVehicle(v)">
+                    🗑️ Delete
+                  </button>
+                  <a routerLink="/bookings/new" [queryParams]="{ vehicleId: v.id }" class="btn-vsub-wash">
+                    🚿 Wash Now
+                  </a>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 4: ADDRESSES IN PROFILE                    -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'ADDRESSES') {
+    <div class="profile-section-card">
+      <div class="section-card-header">
+        <div>
+          <h3 class="section-card-title">Saved Service Addresses</h3>
+          <p class="section-card-desc">Doorstep dispatch locations for washing vans</p>
+        </div>
+        <a routerLink="/addresses/new" [queryParams]="{ returnUrl: '/dashboard/profile' }" class="btn-add-section-item">
+          + Add Address
+        </a>
+      </div>
+
+      @if (addressesLoading()) {
+        <div class="section-loading-box">Loading addresses…</div>
+      } @else if (addresses().length === 0) {
+        <div class="empty-sub-box">
+          <span class="empty-icon-sub">📍</span>
+          <strong>No saved addresses</strong>
+          <p>Add your home or office address to enable instant booking dispatch.</p>
+          <a routerLink="/addresses/new" [queryParams]="{ returnUrl: '/dashboard/profile' }" class="btn-sub-action">
+            Add Address
+          </a>
+        </div>
+      } @else {
+        <div class="address-card-subgrid">
+          @for (a of addresses(); track a.id) {
+            <div class="address-sub-card" [class.is-default-addr]="a.isDefault">
+              <div class="asub-top-line">
+                <span class="asub-tag-pill">{{ a.label || 'Home' }}</span>
+                @if (a.isDefault) {
+                  <span class="asub-default-badge">✓ Primary Default</span>
+                }
+              </div>
+              <strong class="asub-line1">{{ a.line1 }}</strong>
+              @if (a.line2) {
+                <span class="asub-line2">{{ a.line2 }}</span>
+              }
+              <span class="asub-city-zip">{{ a.city }}, {{ a.state }} {{ a.postalCode }}</span>
+
+              <div class="asub-actions-row">
+                <a [routerLink]="['/addresses', a.id, 'edit']" [queryParams]="{ returnUrl: '/dashboard/profile' }" class="btn-vsub-edit">
+                  ✏️ Edit
+                </a>
+                @if (!a.isDefault) {
+                  <button type="button" class="btn-asub-set-default" (click)="setDefaultAddress(a)">
+                    Set as Default
+                  </button>
+                }
+                <button type="button" class="btn-vsub-del" (click)="promptDeleteAddress(a)">
+                  🗑️ Delete
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 5: WASHER SERVICE PHOTOS                   -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'WASH_PHOTOS') {
+    <div class="profile-section-card">
+      <div class="section-card-header">
+        <div>
+          <h3 class="section-card-title">Technician Service Evidence &amp; Photos</h3>
+          <p class="section-card-desc">Showroom condition verification captured by your certified wash technician before and after each service</p>
+        </div>
+        <button type="button" class="btn-refresh-wash-photos" (click)="loadWashPhotos()" title="Refresh Photos">
+          ↻ Refresh Photos
+        </button>
+      </div>
+
+      @if (washPhotosLoading()) {
+        <div class="section-loading-box">Loading service photos…</div>
+      } @else if (washBookingsWithPhotos().length === 0) {
+        <div class="empty-sub-box">
+          <span class="empty-icon-sub">📸</span>
+          <strong>No service photos recorded yet</strong>
+          <p>Once our certified mobile washer inspects and cleans your vehicle, before-and-after showroom photos will appear here.</p>
+          <a routerLink="/bookings/new" class="btn-sub-action">
+            Book Doorstep Wash
+          </a>
+        </div>
+      } @else {
+        <div class="wash-bookings-photos-container">
+          @for (item of washBookingsWithPhotos(); track item.bookingId) {
+            <div class="wash-job-photo-card">
+              <div class="wash-job-head">
+                <div class="wash-job-title-col">
+                  <div class="wash-job-badge-line">
+                    <span class="wash-order-tag">#GCW-{{ item.bookingId }}</span>
+                    <span class="wash-status-tag">{{ item.status }}</span>
+                    <span class="wash-eco-tag">💧 {{ item.waterSavedLiters }}L Water Saved</span>
+                  </div>
+                  <h4 class="wash-job-title">{{ item.packageName }} • {{ item.vehicleLabel }}</h4>
+                  <span class="wash-job-time">📅 {{ item.date | date:'medium' }}</span>
+                </div>
+                <a [routerLink]="['/bookings', item.bookingId]" class="btn-view-order-link">
+                  View Full Order →
+                </a>
+              </div>
+
+              <!-- Before Wash Photos Row -->
+              <div class="evidence-sub-block">
+                <div class="evidence-phase-bar">
+                  <span class="phase-lbl pre-wash-lbl">📸 Pre-Wash Vehicle Inspection ({{ item.beforePhotos.length }} photos)</span>
+                  <span class="phase-meta">Condition documentation captured upon arrival</span>
+                </div>
+                @if (item.beforePhotos.length > 0) {
+                  <div class="wash-photos-strip">
+                    @for (photo of item.beforePhotos; track photo; let pIdx = $index) {
+                      <div class="evidence-photo-thumb" (click)="openWashPhoto(photo, 'Pre-Wash Condition — Order #' + item.bookingId + ' (Photo ' + (pIdx + 1) + ')')">
+                        <img [src]="photo" alt="Pre-wash inspection photo" class="thumb-img" />
+                        <span class="thumb-label">Before Wash #{{ pIdx + 1 }}</span>
+                        <div class="thumb-hover-overlay">🔍 Zoom</div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="no-photo-slot">
+                    <span>No pre-wash photos logged for this order.</span>
+                  </div>
+                }
+              </div>
+
+              <!-- After Wash Photos Row -->
+              <div class="evidence-sub-block">
+                <div class="evidence-phase-bar">
+                  <span class="phase-lbl post-wash-lbl">✨ Post-Wash Showroom Finish ({{ item.afterPhotos.length }} photos)</span>
+                  <span class="phase-meta">Quality finish certified by eco-technician</span>
+                </div>
+                @if (item.afterPhotos.length > 0) {
+                  <div class="wash-photos-strip">
+                    @for (photo of item.afterPhotos; track photo; let pIdx = $index) {
+                      <div class="evidence-photo-thumb" (click)="openWashPhoto(photo, 'Showroom Finish — Order #' + item.bookingId + ' (Photo ' + (pIdx + 1) + ')')">
+                        <img [src]="photo" alt="Post-wash finish photo" class="thumb-img" />
+                        <span class="thumb-label after-thumb-label">Completed Finish #{{ pIdx + 1 }}</span>
+                        <div class="thumb-hover-overlay">🔍 Zoom</div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="no-photo-slot">
+                    <span>Post-wash photos will appear once service is verified.</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Bottom Session / Logout Card -->
+  <div class="profile-logout-strip">
+    <div class="logout-info-col">
+      <strong class="logout-heading">Account Session</strong>
+      <span class="logout-sub">Logged in as {{ auth.currentUser()?.email }}</span>
+    </div>
+    <button type="button" class="btn-profile-logout" (click)="promptLogout()">
+      🚪 Log Out from Account
+    </button>
+  </div>
+
+  <!-- Delete Vehicle Confirmation Dialog -->
+  <app-customer-confirm-dialog
+    [isOpen]="vehicleToDelete() !== null"
+    [title]="'Delete Vehicle?'"
+    [message]="'Are you sure you want to remove ' + (vehicleToDelete()?.make || '') + ' ' + (vehicleToDelete()?.model || '') + ' from your profile?'"
+    [confirmLabel]="'Delete Vehicle'"
+    [cancelLabel]="'Cancel'"
+    [isDanger]="true"
+    [icon]="'🗑️'"
+    (confirmed)="confirmDeleteVehicle()"
+    (cancelled)="cancelDeleteVehicle()"
+  />
+
+  <!-- Delete Address Confirmation Dialog -->
+  <app-customer-confirm-dialog
+    [isOpen]="addressToDelete() !== null"
+    [title]="'Delete Address?'"
+    [message]="'Are you sure you want to remove this saved address from your profile?'"
+    [confirmLabel]="'Delete Address'"
+    [cancelLabel]="'Cancel'"
+    [isDanger]="true"
+    [icon]="'🗑️'"
+    (confirmed)="confirmDeleteAddress()"
+    (cancelled)="cancelDeleteAddress()"
+  />
+
+  <!-- Logout Confirmation Dialog -->
+  <app-customer-confirm-dialog
+    [isOpen]="showLogoutModal()"
+    [title]="'Are you sure you want to log out?'"
+    [message]="'You will need to sign in again to access your vehicles and bookings.'"
+    [confirmLabel]="'Log Out'"
+    [cancelLabel]="'Cancel'"
+    [isDanger]="true"
+    [icon]="'🚪'"
+    (confirmed)="confirmLogout()"
+    (cancelled)="cancelLogout()"
+  />
+
+  <!-- Wash Photo Lightbox Modal -->
+  @if (selectedWashPhotoUrl()) {
+    <div class="photo-lightbox-backdrop" (click)="closeWashPhoto()">
+      <div class="photo-lightbox-content" (click)="$event.stopPropagation()">
+        <div class="lightbox-top-bar">
+          <span class="lightbox-title">{{ selectedWashPhotoTitle() || 'Service Wash Photo' }}</span>
+          <button type="button" class="btn-lightbox-close" (click)="closeWashPhoto()" title="Close photo preview">✕</button>
+        </div>
+        <div class="lightbox-img-wrap">
+          <img [src]="selectedWashPhotoUrl()" alt="Enlarged wash photo" class="lightbox-full-img" />
+        </div>
+      </div>
+    </div>
+  }
+</div>
