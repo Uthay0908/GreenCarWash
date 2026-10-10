@@ -1,0 +1,193 @@
+<div class="support-page">
+  <div class="page-header">
+    <div>
+      <div class="badge-row">
+        <span class="support-badge">Customer Success</span>
+        <span class="live-dot">Support Service (FR-A-24)</span>
+      </div>
+      <h1 class="page-title">Support & Complaints Management</h1>
+      <p class="page-subtitle">Resolve booking complaints, adjudicate credits or rewashes, and oversee operational assistance tickets.</p>
+    </div>
+  </div>
+
+  @if (toastMessage()) {
+    <div class="toast-banner">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button
+      class="tab-btn"
+      [class.active]="currentTab() === 'complaints'"
+      (click)="setTab('complaints')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Customer Complaints
+      @if (complaints().length > 0) {
+        <span class="count-chip">{{ complaints().length }}</span>
+      }
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="currentTab() === 'tickets'"
+      (click)="setTab('tickets')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Support Tickets
+    </button>
+  </div>
+
+  <!-- Tab 1: Complaints -->
+  @if (currentTab() === 'complaints') {
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Booking ID</th>
+              <th>Customer</th>
+              <th>Washer</th>
+              <th>Description / Issue</th>
+              <th>Status</th>
+              <th>Decision</th>
+              <th>Date</th>
+              <th class="actions-header">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of complaints(); track c.id) {
+              <tr>
+                <td><code>#{{ c.id }}</code></td>
+                <td><span class="booking-link">#{{ c.bookingId }}</span></td>
+                <td>UID #{{ c.customerId }}</td>
+                <td>{{ c.washerProfileId ? 'Washer #' + c.washerProfileId : 'Unassigned' }}</td>
+                <td class="desc-cell">{{ c.description }}</td>
+                <td>
+                  <span class="status-pill" [class]="c.status.toLowerCase()">{{ c.status }}</span>
+                </td>
+                <td>
+                  @if (c.resolutionDecision) {
+                    <span class="decision-pill" [class]="c.resolutionDecision.toLowerCase()">
+                      {{ c.resolutionDecision }}
+                    </span>
+                  } @else {
+                    <span class="text-muted">Pending</span>
+                  }
+                </td>
+                <td class="text-muted">{{ c.createdAt | date:'short' }}</td>
+                <td class="actions-cell">
+                  @if (c.status !== 'RESOLVED' && c.status !== 'DISMISSED') {
+                    <button class="btn-sm btn-resolve" (click)="openResolveModal(c)">Resolve</button>
+                  } @else {
+                    <span class="text-muted">Settled</span>
+                  }
+                </td>
+              </tr>
+            }
+            @if (complaints().length === 0 && !loading()) {
+              <tr>
+                <td colspan="9" class="empty-state">No complaints logged.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Tab 2: Tickets -->
+  @if (currentTab() === 'tickets') {
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>Subject</th>
+              <th>Category</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>SLA Due</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of tickets(); track t.id) {
+              <tr>
+                <td><code>#{{ t.id }}</code></td>
+                <td class="bold">{{ t.subject }}</td>
+                <td><span class="cat-tag">{{ t.category }}</span></td>
+                <td><span class="priority-pill" [class]="t.priority.toLowerCase()">{{ t.priority }}</span></td>
+                <td><span class="status-pill" [class]="t.status.toLowerCase()">{{ t.status }}</span></td>
+                <td class="text-muted">{{ (t.slaDueAt | date:'short') || '-' }}</td>
+                <td class="text-muted">{{ t.createdAt | date:'short' }}</td>
+              </tr>
+            }
+            @if (tickets().length === 0) {
+              <tr>
+                <td colspan="7" class="empty-state">No support tickets found.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Complaint Resolution Modal -->
+  @if (showResolveModal()) {
+    <div class="modal-backdrop" (click)="closeResolveModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Resolve Complaint #{{ selectedComplaint?.id }}</h2>
+          <button class="close-btn" (click)="closeResolveModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="complaint-summary">
+            <strong>Customer Complaint:</strong>
+            <p>{{ selectedComplaint?.description }}</p>
+          </div>
+
+          <div class="form-group">
+            <label>Adjudication Decision *</label>
+            <select class="form-input" [(ngModel)]="resolutionDecision">
+              <option value="CREDIT">Issue Loyalty Wallet Credit</option>
+              <option value="REFUND">Approve Payment Refund</option>
+              <option value="REWASH">Schedule Free Rewash</option>
+              <option value="NO_ACTION">Dismiss / No Action Warranted</option>
+            </select>
+          </div>
+
+          @if (resolutionDecision === 'CREDIT') {
+            <div class="form-group">
+              <label>Wallet Credit Amount ($USD) *</label>
+              <input
+                type="number"
+                step="1.00"
+                class="form-input"
+                [(ngModel)]="creditAmount"
+                placeholder="25.00" />
+            </div>
+          }
+
+          <div class="form-group">
+            <label>Resolution Notes / Communication to Customer *</label>
+            <textarea
+              class="form-textarea"
+              rows="4"
+              [(ngModel)]="resolutionNotes"
+              placeholder="State rationale and compensation details..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeResolveModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="submitResolution()">
+            Submit Resolution
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

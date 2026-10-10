@@ -1,0 +1,244 @@
+<div class="payments-page">
+  <div class="page-header">
+    <div>
+      <div class="badge-row">
+        <span class="pay-badge">Financial Operations</span>
+        <span class="live-dot">Payment Service (FR-A-21)</span>
+      </div>
+      <h1 class="page-title">Platform Payments &amp; Refunds</h1>
+      <p class="page-subtitle">Monitor customer transactions, inspect payment provider references, and adjudicate refund requests.</p>
+    </div>
+  </div>
+
+  @if (toastMessage()) {
+    <div class="toast-banner">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button
+      class="tab-btn"
+      [class.active]="currentTab() === 'payments'"
+      (click)="setTab('payments')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Payment Transactions ({{ paymentsTotal() }})
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="currentTab() === 'refund-requests'"
+      (click)="setTab('refund-requests')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a8 8 0 0 1 8 8v2M3 10l6 6m-6-6 6-6"/></svg>
+      Refund Requests Queue
+      @if (refundsTotal() > 0) {
+        <span class="count-chip">{{ refundsTotal() }}</span>
+      }
+    </button>
+  </div>
+
+  <!-- Tab 1: Transactions -->
+  @if (currentTab() === 'payments') {
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Payment ID</th>
+              <th>Booking ID</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Flow</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th class="actions-header">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of payments(); track p.id) {
+              <tr>
+                <td><code class="pay-id">#PAY-{{ p.id }}</code></td>
+                <td><span class="booking-link">#GCW{{ p.bookingId }}</span></td>
+                <td>UID #{{ p.customerId }}</td>
+                <td class="bold font-green">{{ p.amount | currency:p.currency }}</td>
+                <td><span class="flow-tag">{{ p.flow }}</span></td>
+                <td>
+                  <span class="status-pill" [class]="p.status.toLowerCase()">{{ p.status }}</span>
+                </td>
+                <td class="text-muted">{{ p.createdAt | date:'short' }}</td>
+                <td class="actions-cell">
+                  @if (p.status === 'SUCCEEDED' || p.status === 'CAPTURED') {
+                    <button class="btn-sm btn-refund" (click)="openRefundModal(p)">Issue Refund</button>
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
+              </tr>
+            }
+            @if (payments().length === 0 && !loading()) {
+              <tr>
+                <td colspan="8" class="empty-state">No payment transactions found in database.</td>
+              </tr>
+            }
+            @if (loading()) {
+              <tr>
+                <td colspan="8" class="empty-state">Loading transactions from payment service...</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Reusable Pagination for Payments -->
+      <app-pagination
+        [currentPage]="paymentsPage()"
+        [pageSize]="paymentsPageSize()"
+        [totalElements]="paymentsTotal()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (pageChange)="onPaymentsPageChange($event)"
+        (pageSizeChange)="onPaymentsPageSizeChange($event)"
+      />
+    </div>
+  }
+
+  <!-- Tab 2: Refund Requests -->
+  @if (currentTab() === 'refund-requests') {
+    <div class="table-card">
+      <div style="padding: 1rem 1.5rem; display: flex; gap: 0.75rem; align-items: center; border-bottom: 1px solid var(--border-color, #e2e8f0);">
+        <input
+          type="number"
+          class="gcw-input"
+          style="max-width: 280px; padding: 0.5rem 0.75rem; font-size: 0.875rem;"
+          [(ngModel)]="searchBookingId"
+          placeholder="Lookup refunds by Booking ID..."
+        />
+        <button type="button" class="btn-sm btn-refund" (click)="searchRefunds()">Lookup Refunds</button>
+        @if (searchBookingId) {
+          <button type="button" class="btn-sm btn-outline" (click)="clearRefundSearch()">Clear</button>
+        }
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Refund ID</th>
+              <th>Payment ID</th>
+              <th>Booking ID</th>
+              <th>Requested Amount</th>
+              <th>Reason</th>
+              <th>Requested By</th>
+              <th>Status</th>
+              <th class="actions-header">Adjudication</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of refunds(); track r.id) {
+              <tr>
+                <td><code>#REF-{{ r.id }}</code></td>
+                <td>#PAY-{{ r.paymentId }}</td>
+                <td>#GCW{{ r.bookingId }}</td>
+                <td class="bold font-green">{{ r.amount | currency:'USD' }}</td>
+                <td class="reason-cell">{{ r.reason }}</td>
+                <td>
+                  <span class="requester-chip" [class.cust]="r.requestedByCustomer">
+                    {{ r.requestedByCustomer ? 'Customer' : 'Admin' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-pill" [class]="r.status.toLowerCase()">{{ r.status }}</span>
+                </td>
+                <td class="actions-cell">
+                  @if (r.status === 'PENDING') {
+                    <button class="btn-sm btn-approve" (click)="approveRefund(r)">Approve</button>
+                    <button class="btn-sm btn-reject" (click)="openRejectModal(r)">Reject</button>
+                  } @else {
+                    <span class="adjudicated-label">{{ r.status }}</span>
+                  }
+                </td>
+              </tr>
+            }
+            @if (refunds().length === 0 && !loading()) {
+              <tr>
+                <td colspan="8" class="empty-state">No refund requests in queue.</td>
+              </tr>
+            }
+            @if (loading()) {
+              <tr>
+                <td colspan="8" class="empty-state">Loading refund queue...</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Reusable Pagination for Refunds -->
+      <app-pagination
+        [currentPage]="refundsPage()"
+        [pageSize]="refundsPageSize()"
+        [totalElements]="refundsTotal()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (pageChange)="onRefundsPageChange($event)"
+        (pageSizeChange)="onRefundsPageSizeChange($event)"
+      />
+    </div>
+  }
+
+  <!-- Direct Refund Modal -->
+  @if (showRefundModal()) {
+    <div class="modal-backdrop" (click)="closeRefundModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Issue Refund for Payment #{{ refundPaymentId }}</h2>
+          <button class="close-btn" (click)="closeRefundModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Refund Amount ($ USD)</label>
+            <input type="number" class="modal-input" [(ngModel)]="refundAmount" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Reason for Refund</label>
+            <textarea
+              class="modal-input"
+              rows="3"
+              [(ngModel)]="refundReason"
+              placeholder="e.g. Customer requested immediate cancellation; service was not performed."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeRefundModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="submitDirectRefund()">Confirm Refund</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Reject Refund Modal -->
+  @if (showRejectModal()) {
+    <div class="modal-backdrop" (click)="closeRejectModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Reject Refund Request #{{ selectedRefundId }}</h2>
+          <button class="close-btn" (click)="closeRejectModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Rejection Reason</label>
+            <textarea
+              class="modal-input"
+              rows="3"
+              [(ngModel)]="rejectReason"
+              placeholder="Reason explaining why refund was denied..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeRejectModal()">Cancel</button>
+          <button class="btn btn-danger" (click)="submitRejectRefund()">Confirm Rejection</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

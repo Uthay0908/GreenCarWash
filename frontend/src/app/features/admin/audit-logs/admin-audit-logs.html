@@ -1,0 +1,127 @@
+<div class="audit-page">
+  <div class="page-header">
+    <div>
+      <div class="badge-row">
+        <span class="audit-badge">Compliance & Security</span>
+        <span class="live-dot">Immutable Audit Trail (FR-A-35)</span>
+      </div>
+      <h1 class="page-title">Audit Trail & Activity Log</h1>
+      <p class="page-subtitle">Track security actions, role transitions, KYC reviews, refund executions, and manual dispatch interventions.</p>
+    </div>
+    <button class="btn btn-secondary" (click)="loadLogs()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>
+      Refresh Log
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input
+        type="text"
+        placeholder="Filter by aggregate, ID, payload..."
+        [(ngModel)]="searchQuery" />
+    </div>
+
+    <div class="filter-group">
+      <select [(ngModel)]="selectedActionFilter" class="filter-select">
+        <option value="ALL">All Event Types</option>
+        <option value="WasherAssigned">WasherAssigned</option>
+        <option value="PaymentSucceeded">PaymentSucceeded</option>
+        <option value="KycApproved">KycApproved</option>
+        <option value="PackageUpdated">PackageUpdated</option>
+        <option value="BookingCancelled">BookingCancelled</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Event Type</th>
+            <th>Aggregate Type</th>
+            <th>Aggregate ID</th>
+            <th>Actor</th>
+            <th>Payload Preview</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of filteredLogs(); track r.id) {
+            <tr>
+              <td class="text-muted">{{ r.createdAt | date:'short' }}</td>
+              <td><span class="action-tag" [class]="r.eventType.toLowerCase()">{{ r.eventType }}</span></td>
+              <td><span class="entity-badge">{{ r.aggregateType }}</span></td>
+              <td><code>#{{ r.aggregateId }}</code></td>
+              <td>
+                <span class="role-chip">{{ r.actorUserId ? 'User #' + r.actorUserId : 'SYSTEM' }}</span>
+              </td>
+              <td class="details-preview">{{ r.payloadJson || '-' }}</td>
+              <td>
+                <button class="btn-sm btn-inspect" (click)="viewDetails(r)">Inspect</button>
+              </td>
+            </tr>
+          }
+          @if (filteredLogs().length === 0 && !loading()) {
+            <tr>
+              <td colspan="7" class="empty-state">No audit logs match current filters.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalElements() > 0) {
+      <app-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="pageSize()"
+        [totalElements]="totalElements()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      />
+    }
+  </div>
+
+  <!-- Detail Modal -->
+  @if (selectedRecord(); as rec) {
+    <div class="modal-backdrop" (click)="closeDetails()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Audit Record #{{ rec.id }}</h2>
+          <button class="close-btn" (click)="closeDetails()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-row">
+            <span class="d-label">Timestamp:</span>
+            <span class="d-val">{{ rec.createdAt | date:'medium' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="d-label">Event Type:</span>
+            <span class="d-val bold font-green">{{ rec.eventType }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="d-label">Target Aggregate:</span>
+            <span class="d-val">{{ rec.aggregateType }} (ID: {{ rec.aggregateId }})</span>
+          </div>
+          <div class="detail-row">
+            <span class="d-label">Actor User ID:</span>
+            <span class="d-val">{{ rec.actorUserId ? '#' + rec.actorUserId : 'SYSTEM' }}</span>
+          </div>
+          <div class="detail-row full">
+            <span class="d-label">Payload JSON:</span>
+            <pre class="json-block">{{ rec.payloadJson || 'No additional payload stored.' }}</pre>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeDetails()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

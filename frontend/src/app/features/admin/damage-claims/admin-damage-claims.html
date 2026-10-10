@@ -1,0 +1,142 @@
+<div class="damage-page">
+  <div class="page-header">
+    <div>
+      <div class="badge-row">
+        <span class="damage-badge">Insurance & Claims</span>
+        <span class="live-dot">Damage Review Queue (FR-A-24)</span>
+      </div>
+      <h1 class="page-title">Vehicle Damage Claims</h1>
+      <p class="page-subtitle">Inspect photographic evidence, verify timestamps, and adjudicate customer vehicle damage claims.</p>
+    </div>
+  </div>
+
+  @if (toastMessage()) {
+    <div class="toast-banner">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Claim ID</th>
+            <th>Booking ID</th>
+            <th>Customer</th>
+            <th>Washer</th>
+            <th>Claim Description</th>
+            <th>Claimed Amount</th>
+            <th>Evidence Photo</th>
+            <th>Status</th>
+            <th class="actions-header">Adjudication</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of claims(); track c.id) {
+            <tr>
+              <td><code>#{{ c.id }}</code></td>
+              <td><span class="booking-link">#{{ c.bookingId }}</span></td>
+              <td>UID #{{ c.customerId }}</td>
+              <td>{{ c.washerProfileId ? 'Washer #' + c.washerProfileId : 'Unassigned' }}</td>
+              <td class="desc-cell">{{ c.description }}</td>
+              <td class="bold font-green">{{ c.claimedAmount ? (c.claimedAmount | currency:'USD') : 'N/A' }}</td>
+              <td>
+                @if (c.evidenceFileUrls && c.evidenceFileUrls.length > 0) {
+                  <a [href]="c.evidenceFileUrls[0]" target="_blank" class="evidence-link">
+                    <img [src]="c.evidenceFileUrls[0]" alt="Evidence" class="evidence-thumb" />
+                    <span>View Photo</span>
+                  </a>
+                } @else {
+                  <span class="text-muted">No photo</span>
+                }
+              </td>
+              <td>
+                <span class="status-pill" [class]="c.status.toLowerCase()">{{ c.status }}</span>
+              </td>
+              <td class="actions-cell">
+                @if (c.status === 'SUBMITTED' || c.status === 'UNDER_REVIEW') {
+                  <button class="btn-sm btn-decide" (click)="openDecisionModal(c)">Adjudicate</button>
+                } @else {
+                  <span class="resolved-note">
+                    {{ c.approvedAmount ? (c.approvedAmount | currency:'USD') : 'Settled' }}
+                  </span>
+                }
+              </td>
+            </tr>
+          }
+          @if (claims().length === 0 && !loading()) {
+            <tr>
+              <td colspan="9" class="empty-state">No vehicle damage claims submitted.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Adjudication Modal -->
+  @if (showModal()) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Adjudicate Damage Claim #{{ selectedClaim?.id }}</h2>
+          <button class="close-btn" (click)="closeModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="claim-details-box">
+            <div><strong>Booking:</strong> #{{ selectedClaim?.bookingId }}</div>
+            <div><strong>Reported Damage:</strong> {{ selectedClaim?.description }}</div>
+            <div><strong>Claimed Compensation:</strong> {{ selectedClaim?.claimedAmount | currency:'USD' }}</div>
+          </div>
+
+          <div class="form-group">
+            <label>Decision Verdict *</label>
+            <div class="decision-radios">
+              <label class="radio-label">
+                <input type="radio" [value]="true" [(ngModel)]="decisionApprove" />
+                <span class="verdict-tag approve">Approve Claim</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" [value]="false" [(ngModel)]="decisionApprove" />
+                <span class="verdict-tag reject">Reject Claim</span>
+              </label>
+            </div>
+          </div>
+
+          @if (decisionApprove) {
+            <div class="form-group">
+              <label>Approved Payout Amount ($USD) *</label>
+              <input
+                type="number"
+                step="5.00"
+                class="form-input"
+                [(ngModel)]="approvedAmount"
+                placeholder="100.00" />
+            </div>
+          }
+
+          <div class="form-group">
+            <label>Adjudication Notes / Rationale *</label>
+            <textarea
+              class="form-textarea"
+              rows="4"
+              [(ngModel)]="decisionNotes"
+              placeholder="State finding details, comparison against pre-wash inspection photos, or reasons for rejection..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+          <button
+            class="btn"
+            [class.btn-primary]="decisionApprove"
+            [class.btn-danger]="!decisionApprove"
+            (click)="submitDecision()">
+            Confirm {{ decisionApprove ? 'Approval' : 'Rejection' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

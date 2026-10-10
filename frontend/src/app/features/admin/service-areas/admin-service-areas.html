@@ -1,0 +1,118 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Service Area Coverage</h1>
+    <p>Define platform operational coverage zones, served postal/PIN codes, and dispatch radii layered on washer locations.</p>
+  </div>
+  <button class="gcw-btn gcw-btn-primary" (click)="openCreateModal()">
+    + Add Service Area
+  </button>
+</div>
+
+@if (toastMessage()) {
+  <div class="gcw-alert gcw-alert-success">{{ toastMessage() }}</div>
+}
+
+<div class="gcw-card">
+  <div class="gcw-table-wrap">
+    <table class="gcw-table">
+      <thead>
+        <tr>
+          <th>Zone ID</th>
+          <th>Zone Name</th>
+          <th>Covered Postal / PIN Codes</th>
+          <th>Center GPS Coordinates</th>
+          <th>Service Radius</th>
+          <th>Coverage Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of serviceAreas(); track a.id) {
+          <tr>
+            <td><strong>#{{ a.id }}</strong></td>
+            <td><strong>{{ a.name }}</strong></td>
+            <td>
+              <div class="pincode-wrap">
+                @for (pc of a.postalCodes; track pc) {
+                  <span class="pincode-pill">{{ pc }}</span>
+                }
+              </div>
+            </td>
+            <td>
+              <small>{{ a.centerLatitude?.toFixed(4) }}, {{ a.centerLongitude?.toFixed(4) }}</small>
+            </td>
+            <td><strong>{{ a.radiusKm }} km</strong></td>
+            <td>
+              <span class="gcw-badge" [class.gcw-badge-success]="a.active" [class.gcw-badge-danger]="!a.active">
+                {{ a.active ? 'Operational' : 'Suspended' }}
+              </span>
+            </td>
+            <td>
+              <button
+                class="gcw-btn gcw-btn-sm"
+                [class.gcw-btn-danger]="a.active"
+                [class.gcw-btn-success]="!a.active"
+                (click)="toggleActive(a)"
+              >
+                {{ a.active ? 'Suspend Zone' : 'Activate Zone' }}
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty-state">No service areas configured.</td></tr>
+        }
+      </tbody>
+    </table>
+
+    @if (totalElements() > 0) {
+      <app-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="pageSize()"
+        [totalElements]="totalElements()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      />
+    }
+  </div>
+</div>
+
+<!-- Modal -->
+@if (showModal()) {
+  <div class="gcw-modal-backdrop" (click)="closeModal()">
+    <div class="gcw-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add Service Area Zone</h3>
+        <button class="btn-close" (click)="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Zone Name</label>
+          <input type="text" class="gcw-input" [(ngModel)]="name" placeholder="e.g. South Tech Hub" />
+        </div>
+        <div class="form-group">
+          <label>Served Postal / PIN Codes (comma separated)</label>
+          <input type="text" class="gcw-input" [(ngModel)]="postalCodesInput" placeholder="560001, 560002, 560038" />
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>Center Latitude</label>
+            <input type="number" step="0.0001" class="gcw-input" [(ngModel)]="centerLat" />
+          </div>
+          <div class="form-group flex-1">
+            <label>Center Longitude</label>
+            <input type="number" step="0.0001" class="gcw-input" [(ngModel)]="centerLng" />
+          </div>
+          <div class="form-group flex-1">
+            <label>Coverage Radius (km)</label>
+            <input type="number" class="gcw-input" [(ngModel)]="radiusKm" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="gcw-btn gcw-btn-outline" (click)="closeModal()">Cancel</button>
+        <button class="gcw-btn gcw-btn-primary" (click)="saveServiceArea()">Save Zone</button>
+      </div>
+    </div>
+  </div>
+}

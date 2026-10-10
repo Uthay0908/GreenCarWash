@@ -1,0 +1,227 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Platform Vehicles</h1>
+    <p>Manage customer fleet &amp; private vehicles, review registrations, and activate/deactivate.</p>
+  </div>
+  <div class="header-actions">
+    <!-- Status Filter Buttons -->
+    <div class="filter-pill-group">
+      <button
+        type="button"
+        class="filter-pill"
+        [class.active]="statusFilter() === 'ALL'"
+        (click)="onStatusChange('ALL')"
+      >
+        All
+      </button>
+      <button
+        type="button"
+        class="filter-pill"
+        [class.active]="statusFilter() === 'ACTIVE'"
+        (click)="onStatusChange('ACTIVE')"
+      >
+        Active
+      </button>
+      <button
+        type="button"
+        class="filter-pill"
+        [class.active]="statusFilter() === 'INACTIVE'"
+        (click)="onStatusChange('INACTIVE')"
+      >
+        Inactive
+      </button>
+    </div>
+
+    <!-- Search Input -->
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="Search make, model, plate..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        (keyup.enter)="onSearch()"
+        class="gcw-input"
+      />
+      <button class="gcw-btn gcw-btn-primary" (click)="onSearch()" [disabled]="loading()">Search</button>
+    </div>
+  </div>
+</div>
+
+@if (toastMessage()) {
+  <div class="gcw-alert gcw-alert-success">{{ toastMessage() }}</div>
+}
+
+<div class="gcw-card">
+  <div class="gcw-table-wrap">
+    <table class="gcw-table">
+      <thead>
+        <tr>
+          <th>Vehicle ID</th>
+          <th>Customer Profile ID</th>
+          <th>Make &amp; Model</th>
+          <th>License Plate</th>
+          <th>Color</th>
+          <th>Vehicle Category</th>
+          <th>Status</th>
+          <th>Registered</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (v of vehicles(); track v.id) {
+          <tr>
+            <td><strong>#{{ v.id }}</strong></td>
+            <td>#{{ v.customerProfileId }}</td>
+            <td class="bold clickable" (click)="openDetailsModal(v)" title="View Vehicle Details">
+              <span class="vehicle-link">{{ v.make }} {{ v.model }}</span>
+            </td>
+            <td><span class="plate-badge">{{ v.licensePlate }}</span></td>
+            <td>{{ v.color || '-' }}</td>
+            <td><span class="gcw-badge gcw-badge-info">{{ v.vehicleType || 'SEDAN' }}</span></td>
+            <td>
+              <span class="gcw-badge" [class.gcw-badge-success]="v.active" [class.gcw-badge-danger]="!v.active">
+                {{ v.active ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td>{{ v.createdAt | date: 'mediumDate' }}</td>
+            <td class="text-right">
+              <div class="table-actions">
+                <button class="gcw-btn gcw-btn-sm gcw-btn-outline" (click)="openDetailsModal(v)">
+                  View
+                </button>
+                <button
+                  class="gcw-btn gcw-btn-sm"
+                  [class.gcw-btn-danger]="v.active"
+                  [class.gcw-btn-success]="!v.active"
+                  (click)="toggleVehicle(v)"
+                >
+                  {{ v.active ? 'Deactivate' : 'Reactivate' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="empty-state">
+              @if (loading()) {
+                <span>Loading platform vehicles...</span>
+              } @else {
+                <span>No vehicles registered in the platform database matching criteria.</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Reusable Server-Side Pagination -->
+  <app-pagination
+    [currentPage]="currentPage()"
+    [pageSize]="pageSize()"
+    [totalElements]="totalElements()"
+    [pageSizeOptions]="[10, 20, 50]"
+    (pageChange)="onPageChange($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
+  />
+</div>
+
+<!-- Vehicle Details Modal -->
+@if (selectedVehicle()) {
+  <div class="gcw-modal-backdrop" (click)="closeDetailsModal()">
+    <div class="gcw-modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>Vehicle Details: {{ selectedVehicle()?.make }} {{ selectedVehicle()?.model }}</h3>
+          <span class="modal-subtitle">Vehicle ID #{{ selectedVehicle()?.id }} &bull; Customer Profile #{{ selectedVehicle()?.customerProfileId }}</span>
+        </div>
+        <button class="btn-close" (click)="closeDetailsModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Overview Grid -->
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Make &amp; Model</span>
+            <span class="detail-val">{{ selectedVehicle()?.make }} {{ selectedVehicle()?.model }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">License Plate</span>
+            <span class="detail-val"><span class="plate-badge">{{ selectedVehicle()?.licensePlate }}</span></span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Color</span>
+            <span class="detail-val">{{ selectedVehicle()?.color || 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Category / Type</span>
+            <span class="detail-val"><span class="gcw-badge gcw-badge-info">{{ selectedVehicle()?.vehicleType || 'SEDAN' }}</span></span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Operating Status</span>
+            <span class="detail-val">
+              <span class="gcw-badge" [class.gcw-badge-success]="selectedVehicle()?.active" [class.gcw-badge-danger]="!selectedVehicle()?.active">
+                {{ selectedVehicle()?.active ? 'Active' : 'Inactive' }}
+              </span>
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Registration Date</span>
+            <span class="detail-val">{{ selectedVehicle()?.createdAt | date: 'medium' }}</span>
+          </div>
+        </div>
+
+        <!-- Vehicle Wash / Booking History -->
+        <div class="section-divider">
+          <h4>Service &amp; Booking History ({{ vehicleBookings().length }})</h4>
+        </div>
+        @if (vehicleBookings().length > 0) {
+          <div class="table-responsive mini-table-wrap">
+            <table class="gcw-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>Customer</th>
+                  <th>Package</th>
+                  <th>Status</th>
+                  <th>Amount</th>
+                  <th>Scheduled / Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (b of vehicleBookings(); track b.id) {
+                  <tr>
+                    <td><code>#GCW{{ b.id }}</code></td>
+                    <td>Customer #{{ b.customerId }}</td>
+                    <td>Package #{{ b.packageId }}</td>
+                    <td>
+                      <span class="gcw-badge" [class.gcw-badge-success]="b.status === 'COMPLETED'" [class.gcw-badge-warning]="b.status === 'IN_PROGRESS' || b.status === 'PENDING'">
+                        {{ b.status }}
+                      </span>
+                    </td>
+                    <td><strong>${{ b.totalAmount || b.packagePrice || 0 }}</strong></td>
+                    <td>{{ (b.scheduledAt || b.createdAt) | date: 'short' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="empty-text">No service bookings recorded for this vehicle.</p>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="gcw-btn"
+          [class.gcw-btn-danger]="selectedVehicle()?.active"
+          [class.gcw-btn-success]="!selectedVehicle()?.active"
+          (click)="selectedVehicle() && toggleVehicle(selectedVehicle()!)"
+        >
+          {{ selectedVehicle()?.active ? 'Deactivate Vehicle' : 'Reactivate Vehicle' }}
+        </button>
+        <button class="gcw-btn gcw-btn-outline" (click)="closeDetailsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

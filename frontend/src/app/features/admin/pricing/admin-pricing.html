@@ -1,0 +1,248 @@
+<div class="pricing-page" style="padding: 1.5rem;">
+  <div class="page-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start;">
+    <div>
+      <h1 class="page-title" style="margin: 0; font-size: 1.75rem; font-weight: 700;">Dynamic Pricing Rules</h1>
+      <p class="page-subtitle" style="margin: 0.25rem 0 0; color: #64748b;">Configure demand surge, weather multiplier, and washer scarcity pricing rules.</p>
+    </div>
+    <button type="button" class="gcw-btn gcw-btn-primary" (click)="openCreateModal()">+ Create Pricing Rule</button>
+  </div>
+
+  @if (toastMessage()) {
+    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #065f46; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+      {{ toastMessage() }}
+    </div>
+  }
+
+  <!-- Master Pricing Engine Switch -->
+  <div class="gcw-card" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #10b981; background: #f8fafc; padding: 1.25rem 1.5rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <h2 style="margin: 0; font-size: 1.15rem; font-weight: 700;">Pricing Engine Operational Mode</h2>
+        <span [style.background]="dynamicPricingEnabled() ? '#dcfce7' : '#fef3c7'"
+              [style.color]="dynamicPricingEnabled() ? '#15803d' : '#b45309'"
+              style="padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.8125rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem;">
+          <span [style.background]="dynamicPricingEnabled() ? '#10b981' : '#f59e0b'" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+          {{ dynamicPricingEnabled() ? 'DYNAMIC PRICING ACTIVE' : 'NORMAL PRICING ACTIVE' }}
+        </span>
+      </div>
+      <p style="margin: 0.35rem 0 0; color: #64748b; font-size: 0.875rem;">
+        @if (dynamicPricingEnabled()) {
+          Dynamic surge multipliers (demand, weather, and washer scarcity) are dynamically computed during price quotes.
+        } @else {
+          Dynamic surges are disabled. All customers receive flat standard package & add-on pricing (1.0x surge multiplier).
+        }
+      </p>
+    </div>
+    <button type="button"
+            class="gcw-btn"
+            [style.background]="dynamicPricingEnabled() ? '#fef3c7' : '#10b981'"
+            [style.color]="dynamicPricingEnabled() ? '#92400e' : '#fff'"
+            [style.border]="dynamicPricingEnabled() ? '1px solid #fde68a' : 'none'"
+            style="font-weight: 600; cursor: pointer; padding: 0.6rem 1.2rem; border-radius: 6px;"
+            (click)="toggleMasterDynamicPricing()">
+      {{ dynamicPricingEnabled() ? 'Switch to Normal (Flat) Pricing' : 'Switch to Dynamic Surge Pricing' }}
+    </button>
+  </div>
+
+  <!-- Tab Bar -->
+  <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem;">
+    <button
+      type="button"
+      [style.background]="currentTab() === 'demand' ? '#10b981' : '#f1f5f9'"
+      [style.color]="currentTab() === 'demand' ? '#fff' : '#475569'"
+      style="padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;"
+      (click)="setTab('demand')">
+      Demand Rules ({{ demandRules().length }})
+    </button>
+    <button
+      type="button"
+      [style.background]="currentTab() === 'weather' ? '#10b981' : '#f1f5f9'"
+      [style.color]="currentTab() === 'weather' ? '#fff' : '#475569'"
+      style="padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;"
+      (click)="setTab('weather')">
+      Weather Rules ({{ weatherRules().length }})
+    </button>
+    <button
+      type="button"
+      [style.background]="currentTab() === 'scarcity' ? '#10b981' : '#f1f5f9'"
+      [style.color]="currentTab() === 'scarcity' ? '#fff' : '#475569'"
+      style="padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;"
+      (click)="setTab('scarcity')">
+      Scarcity Rules ({{ scarcityRules().length }})
+    </button>
+  </div>
+
+  <!-- Tab 1: Demand Rules -->
+  @if (currentTab() === 'demand') {
+    <div class="gcw-card">
+      <div class="gcw-table-wrap">
+        <table class="gcw-table">
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Rule Name</th>
+              <th>Demand Level</th>
+              <th>Multiplier</th>
+              <th>Status</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of demandRules(); track r.id) {
+              <tr>
+                <td>#{{ r.id }}</td>
+                <td><strong>{{ r.name }}</strong></td>
+                <td><span style="background: #e0e7ff; color: #3730a3; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">{{ r.demandLevel }}</span></td>
+                <td><span style="font-weight: 600; color: #10b981;">{{ r.multiplier }}x</span></td>
+                <td>
+                  <span [style.background]="r.active ? '#dcfce7' : '#f1f5f9'" [style.color]="r.active ? '#15803d' : '#64748b'" style="padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                    {{ r.active ? 'ACTIVE' : 'INACTIVE' }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  <button type="button" class="gcw-btn gcw-btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8125rem;" (click)="toggleDemandActive(r)">
+                    {{ r.active ? 'Deactivate' : 'Activate' }}
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="gcw-empty" style="text-align: center; padding: 2rem;">No demand pricing rules configured.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Tab 2: Weather Rules -->
+  @if (currentTab() === 'weather') {
+    <div class="gcw-card">
+      <div class="gcw-table-wrap">
+        <table class="gcw-table">
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Weather Condition</th>
+              <th>Surge Multiplier</th>
+              <th>Status</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of weatherRules(); track r.id) {
+              <tr>
+                <td>#{{ r.id }}</td>
+                <td><strong>{{ r.weatherCondition || r.condition }}</strong></td>
+                <td><span style="font-weight: 600; color: #10b981;">{{ r.multiplier }}x</span></td>
+                <td>
+                  <span [style.background]="r.active ? '#dcfce7' : '#f1f5f9'" [style.color]="r.active ? '#15803d' : '#64748b'" style="padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                    {{ r.active ? 'ACTIVE' : 'INACTIVE' }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  <button type="button" class="gcw-btn gcw-btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8125rem;" (click)="toggleWeatherActive(r)">
+                    {{ r.active ? 'Deactivate' : 'Activate' }}
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="gcw-empty" style="text-align: center; padding: 2rem;">No weather pricing rules configured.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Tab 3: Scarcity Rules -->
+  @if (currentTab() === 'scarcity') {
+    <div class="gcw-card">
+      <div class="gcw-table-wrap">
+        <table class="gcw-table">
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Available Washers</th>
+              <th>Surge Multiplier</th>
+              <th>Status</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of scarcityRules(); track r.id) {
+              <tr>
+                <td>#{{ r.id }}</td>
+                <td><strong>{{ (r.minAvailableWashers || 0) }} - {{ r.maxAvailableWashers ?? '∞' }} washers</strong></td>
+                <td><span style="font-weight: 600; color: #10b981;">{{ r.multiplier }}x</span></td>
+                <td>
+                  <span [style.background]="r.active ? '#dcfce7' : '#f1f5f9'" [style.color]="r.active ? '#15803d' : '#64748b'" style="padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                    {{ r.active ? 'ACTIVE' : 'INACTIVE' }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  <button type="button" class="gcw-btn gcw-btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8125rem;" (click)="toggleScarcityActive(r)">
+                    {{ r.active ? 'Deactivate' : 'Activate' }}
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="gcw-empty" style="text-align: center; padding: 2rem;">No scarcity pricing rules configured.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Create Rule Modal -->
+@if (showModal()) {
+  <div class="modal-overlay" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="gcw-card" style="width: 100%; max-width: 480px; background: #fff; padding: 1.5rem; border-radius: 8px;">
+      <h3 style="margin-top: 0;">Create {{ currentTab() | titlecase }} Pricing Rule</h3>
+
+      @if (currentTab() === 'demand') {
+        <div class="gcw-field" style="margin-bottom: 0.75rem;">
+          <label class="gcw-label" style="display: block; margin-bottom: 0.25rem;">Rule Name</label>
+          <input type="text" class="gcw-input" [(ngModel)]="ruleName" placeholder="e.g. High Demand Surge" style="width: 100%; padding: 0.5rem;" />
+        </div>
+        <div class="gcw-field" style="margin-bottom: 0.75rem;">
+          <label class="gcw-label" style="display: block; margin-bottom: 0.25rem;">Demand Tier Level</label>
+          <select class="gcw-input" [(ngModel)]="demandLevel" style="width: 100%; padding: 0.5rem;">
+            <option value="LOW">LOW (Off-peak / late night discount or minimal surge)</option>
+            <option value="NORMAL">NORMAL (Standard baseline)</option>
+            <option value="HIGH">HIGH (Peak evening / weekend daytime)</option>
+            <option value="VERY_HIGH">VERY_HIGH (Extreme surge)</option>
+          </select>
+        </div>
+      } @else if (currentTab() === 'weather') {
+        <div class="gcw-field" style="margin-bottom: 0.75rem;">
+          <label class="gcw-label" style="display: block; margin-bottom: 0.25rem;">Weather Condition</label>
+          <select class="gcw-input" [(ngModel)]="weatherCondition" style="width: 100%; padding: 0.5rem;">
+            <option value="RAIN">RAIN (Rainy weather surge)</option>
+            <option value="HEAVY_RAIN">HEAVY_RAIN (Stormy / heavy rain)</option>
+            <option value="POST_RAIN">POST_RAIN (High demand post-rainfall)</option>
+            <option value="DUST_STORM">DUST_STORM (Dust / sandy conditions)</option>
+            <option value="EXTREME_HEAT">EXTREME_HEAT (Summer extreme heat)</option>
+            <option value="CLEAR">CLEAR (Sunny normal)</option>
+          </select>
+        </div>
+      } @else {
+        <div class="gcw-field" style="margin-bottom: 0.75rem;">
+          <label class="gcw-label" style="display: block; margin-bottom: 0.25rem;">Maximum Available Washers Threshold</label>
+          <input type="number" class="gcw-input" [(ngModel)]="maxAvailableWashers" style="width: 100%; padding: 0.5rem;" />
+        </div>
+      }
+
+      <div class="gcw-field" style="margin-bottom: 1.5rem;">
+        <label class="gcw-label" style="display: block; margin-bottom: 0.25rem;">Surge Multiplier (e.g. 1.25 for +25%)</label>
+        <input type="number" step="0.05" class="gcw-input" [(ngModel)]="multiplier" style="width: 100%; padding: 0.5rem;" />
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeModal()">Cancel</button>
+        <button type="button" class="gcw-btn gcw-btn-primary" [disabled]="multiplier <= 1.0" (click)="submitRule()">Create Rule</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,313 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Customer Management</h1>
+    <p>Browse registered customer profiles, inspect complete history, and manage account statuses.</p>
+  </div>
+  <div class="header-actions">
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="Search by name or email..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        (keyup.enter)="onSearch()"
+        class="gcw-input"
+      />
+      <button class="gcw-btn gcw-btn-primary" (click)="onSearch()" [disabled]="loading()">Search</button>
+    </div>
+  </div>
+</div>
+
+@if (toastMessage()) {
+  <div class="gcw-alert gcw-alert-success">{{ toastMessage() }}</div>
+}
+
+<div class="gcw-card">
+  <div class="gcw-table-wrap">
+    <table class="gcw-table">
+      <thead>
+        <tr>
+          <th>Cust ID</th>
+          <th>User Acc ID</th>
+          <th>Customer Name</th>
+          <th>Email Address</th>
+          <th>Phone</th>
+          <th>Language</th>
+          <th>Account Status</th>
+          <th>Registered</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of customers(); track c.id) {
+          <tr>
+            <td><strong>#{{ c.id }}</strong></td>
+            <td>#{{ c.userAccountId }}</td>
+            <td class="bold clickable" (click)="openDetailsModal(c)" title="View Customer Details">
+              <span class="customer-link">{{ c.fullName }}</span>
+            </td>
+            <td>{{ c.email }}</td>
+            <td>{{ c.phone }}</td>
+            <td><span class="gcw-badge gcw-badge-info">{{ c.preferredLanguage || 'EN' }}</span></td>
+            <td>
+              <span class="gcw-badge" [class.gcw-badge-success]="c.enabled !== false" [class.gcw-badge-danger]="c.enabled === false">
+                {{ c.enabled !== false ? 'Active' : 'Disabled' }}
+              </span>
+            </td>
+            <td>{{ c.createdAt | date: 'mediumDate' }}</td>
+            <td class="text-right">
+              <div class="table-actions">
+                <button class="gcw-btn gcw-btn-sm gcw-btn-outline" (click)="openDetailsModal(c)" title="View Customer Details">
+                  View
+                </button>
+                <button class="gcw-btn gcw-btn-sm gcw-btn-outline" (click)="openEditModal(c)" title="Edit Contact Details">
+                  Edit
+                </button>
+                <button
+                  class="gcw-btn gcw-btn-sm"
+                  [class.gcw-btn-danger]="c.enabled !== false"
+                  [class.gcw-btn-success]="c.enabled === false"
+                  (click)="toggleAccountStatus(c)"
+                  [title]="c.enabled !== false ? 'Deactivate account access' : 'Reactivate account access'"
+                >
+                  {{ c.enabled !== false ? 'Disable' : 'Enable' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="empty-state">
+              @if (loading()) {
+                <span>Loading customers from database...</span>
+              } @else {
+                <span>No customers found matching search query.</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Reusable Server-Side Pagination -->
+  <app-pagination
+    [currentPage]="currentPage()"
+    [pageSize]="pageSize()"
+    [totalElements]="totalElements()"
+    [pageSizeOptions]="[10, 20, 50]"
+    (pageChange)="onPageChange($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
+  />
+</div>
+
+<!-- Customer Details Modal -->
+@if (selectedCustomer()) {
+  <div class="gcw-modal-backdrop" (click)="closeDetailsModal()">
+    <div class="gcw-modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>Customer Details: {{ selectedCustomer()?.fullName }}</h3>
+          <span class="modal-subtitle">Customer Profile #{{ selectedCustomer()?.id }} (User Account #{{ selectedCustomer()?.userAccountId }})</span>
+        </div>
+        <button class="btn-close" (click)="closeDetailsModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Overview Grid -->
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Full Name</span>
+            <span class="detail-val">{{ selectedCustomer()?.fullName }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Email Address</span>
+            <span class="detail-val">{{ selectedCustomer()?.email }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Phone Number</span>
+            <span class="detail-val">{{ selectedCustomer()?.phone || 'Not provided' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Preferred Language</span>
+            <span class="detail-val">{{ selectedCustomer()?.preferredLanguage || 'EN' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Account Status</span>
+            <span class="detail-val">
+              <span class="gcw-badge" [class.gcw-badge-success]="selectedCustomer()?.enabled !== false" [class.gcw-badge-danger]="selectedCustomer()?.enabled === false">
+                {{ selectedCustomer()?.enabled !== false ? 'Active' : 'Disabled' }}
+              </span>
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Member Since</span>
+            <span class="detail-val">{{ selectedCustomer()?.createdAt | date: 'medium' }}</span>
+          </div>
+        </div>
+
+        <!-- Vehicles Section -->
+        <div class="section-divider">
+          <h4>Registered Vehicles ({{ customerVehicles().length }})</h4>
+        </div>
+        @if (customerVehicles().length > 0) {
+          <div class="mini-cards-grid">
+            @for (v of customerVehicles(); track v.id) {
+              <div class="mini-card">
+                <div class="mini-card-header">
+                  <strong>{{ v.make }} {{ v.model }}</strong>
+                  <span class="gcw-badge gcw-badge-info">{{ v.vehicleType || 'SEDAN' }}</span>
+                </div>
+                <div class="mini-card-body">
+                  <span>Plate: <code>{{ v.licensePlate }}</code></span>
+                  <span>Color: {{ v.color }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="empty-text">No vehicles registered yet.</p>
+        }
+
+        <!-- Bookings History Section -->
+        <div class="section-divider">
+          <h4>Booking History ({{ customerBookings().length }})</h4>
+        </div>
+        @if (customerBookings().length > 0) {
+          <div class="table-responsive mini-table-wrap">
+            <table class="gcw-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>Package ID</th>
+                  <th>Vehicle ID</th>
+                  <th>Status</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (b of customerBookings(); track b.id) {
+                  <tr>
+                    <td><code>#GCW{{ b.id }}</code></td>
+                    <td>Package #{{ b.packageId }}</td>
+                    <td>Vehicle #{{ b.vehicleId }}</td>
+                    <td>
+                      <span class="gcw-badge" [class.gcw-badge-success]="b.status === 'COMPLETED'" [class.gcw-badge-warning]="b.status === 'IN_PROGRESS' || b.status === 'PENDING'">
+                        {{ b.status }}
+                      </span>
+                    </td>
+                    <td><strong>${{ b.totalAmount || b.packagePrice || 0 }}</strong></td>
+                    <td>{{ (b.scheduledAt || b.createdAt) | date: 'short' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="empty-text">No bookings found for this customer.</p>
+        }
+
+        <!-- Payments Section -->
+        <div class="section-divider">
+          <h4>Payment Records ({{ customerPayments().length }})</h4>
+        </div>
+        @if (customerPayments().length > 0) {
+          <div class="table-responsive mini-table-wrap">
+            <table class="gcw-table">
+              <thead>
+                <tr>
+                  <th>Payment ID</th>
+                  <th>Booking</th>
+                  <th>Flow</th>
+                  <th>Status</th>
+                  <th>Amount</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of customerPayments(); track p.id) {
+                  <tr>
+                    <td><code>#PAY-{{ p.id }}</code></td>
+                    <td>#GCW{{ p.bookingId }}</td>
+                    <td><span class="gcw-badge gcw-badge-info">{{ p.flow }}</span></td>
+                    <td>
+                      <span class="gcw-badge" [class.gcw-badge-success]="p.status === 'SUCCEEDED' || p.status === 'CAPTURED'" [class.gcw-badge-warning]="p.status === 'AUTHORIZED' || p.status === 'PENDING'">
+                        {{ p.status }}
+                      </span>
+                    </td>
+                    <td><strong>${{ p.amount }}</strong></td>
+                    <td>{{ p.createdAt | date: 'short' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="empty-text">No payment records found.</p>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button
+          class="gcw-btn"
+          [class.gcw-btn-danger]="selectedCustomer()?.enabled !== false"
+          [class.gcw-btn-success]="selectedCustomer()?.enabled === false"
+          (click)="selectedCustomer() && toggleAccountStatus(selectedCustomer()!)"
+        >
+          {{ selectedCustomer()?.enabled !== false ? 'Deactivate Account' : 'Reactivate Account' }}
+        </button>
+        <button class="gcw-btn gcw-btn-outline" (click)="closeDetailsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Edit Customer Modal -->
+@if (editingCustomer()) {
+  <div class="gcw-modal-backdrop" (click)="closeEditModal()">
+    <div class="gcw-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Edit Customer #{{ editingCustomer()?.id }}</h3>
+        <button class="btn-close" (click)="closeEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input
+            type="text"
+            class="gcw-input"
+            [ngModel]="editForm().fullName"
+            (ngModelChange)="editForm().fullName = $event"
+          />
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input
+            type="text"
+            class="gcw-input"
+            [ngModel]="editForm().phone"
+            (ngModelChange)="editForm().phone = $event"
+          />
+        </div>
+        <div class="form-group">
+          <label>Preferred Language</label>
+          <select
+            class="gcw-input"
+            [ngModel]="editForm().preferredLanguage"
+            (ngModelChange)="editForm().preferredLanguage = $event"
+          >
+            <option value="EN">English (EN)</option>
+            <option value="ES">Spanish (ES)</option>
+            <option value="FR">French (FR)</option>
+            <option value="DE">German (DE)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="gcw-btn gcw-btn-outline" (click)="closeEditModal()">Cancel</button>
+        <button class="gcw-btn gcw-btn-primary" (click)="saveCustomer()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+}

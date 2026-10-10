@@ -1,0 +1,27 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Organizations</h1>
+    <p>Corporate accounts registered on the platform.</p>
+  </div>
+</div>
+
+<div class="gcw-card">
+  <div class="gcw-table-wrap">
+    <table class="gcw-table">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Billing Email</th><th>Created</th><th>Active</th></tr>
+      </thead>
+      <tbody>
+        @for (org of organizations(); track org.id) {
+          <tr>
+            <td>#{{ org.id }}</td>
+            <td>{{ org.name }}</td>
+            <td>{{ org.billingEmail || '—' }}</td>
+            <td>{{ org.createdAt | date: 'mediumDate' }}</td>
+            <td>{{ org.active ? '✓' : '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

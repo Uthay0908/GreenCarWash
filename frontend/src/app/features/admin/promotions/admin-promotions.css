@@ -1,0 +1,29 @@
+.coupon-code-badge {
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 0.95rem;
+  background: var(--gcw-primary-light);
+  color: var(--gcw-primary-dark);
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  border: 1px dashed var(--gcw-primary);
+}
+
+.limit-text {
+  font-size: 0.8rem;
+  color: var(--gcw-text-muted);
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.flex-1 { flex: 1; }
+
+.empty-state {
+  text-align: center;
+  padding: 2rem !important;
+  color: var(--gcw-text-muted);
+}

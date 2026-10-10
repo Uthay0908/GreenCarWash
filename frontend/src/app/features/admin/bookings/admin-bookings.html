@@ -1,0 +1,357 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Service Bookings</h1>
+    <p>Monitor live dispatch, washer allocation, service progression, water sustainability, and administrative cancellation.</p>
+  </div>
+</div>
+
+@if (toastMessage()) {
+  <div class="gcw-alert gcw-alert-success">{{ toastMessage() }}</div>
+}
+
+<div class="gcw-card">
+  <!-- Search and Filter Bar -->
+  <div class="filter-bar">
+    <div class="filter-controls">
+      <div class="filter-group">
+        <label>Status Filter:</label>
+        <select
+          class="gcw-input"
+          [ngModel]="selectedStatus()"
+          (ngModelChange)="onStatusChange($event)"
+        >
+          <option value="ALL">All Statuses</option>
+          <option value="CREATED">Created (Awaiting Dispatch)</option>
+          <option value="ASSIGNED">Assigned</option>
+          <option value="ACCEPTED">Accepted</option>
+          <option value="ON_THE_WAY">On The Way</option>
+          <option value="ARRIVED">Arrived</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
+          <option value="REFUNDED">Refunded</option>
+        </select>
+      </div>
+
+      <div class="search-box">
+        <input
+          type="text"
+          placeholder="Search by ID, customer, vehicle..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          (keyup.enter)="onSearch()"
+          class="gcw-input"
+        />
+        <button class="gcw-btn gcw-btn-primary" (click)="onSearch()" [disabled]="loading()">Search</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bookings Table -->
+  <div class="gcw-table-wrap">
+    <table class="gcw-table">
+      <thead>
+        <tr>
+          <th>Booking ID</th>
+          <th>Customer</th>
+          <th>Vehicle</th>
+          <th>Package</th>
+          <th>Washer</th>
+          <th>Status</th>
+          <th>Amount</th>
+          <th>Date</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (b of bookings(); track b.id) {
+          <tr>
+            <td>
+              <strong class="clickable" (click)="openBookingDetails(b)" title="View Booking Details">
+                <code class="b-code">#GCW{{ b.id }}</code>
+              </strong>
+            </td>
+            <td>#{{ b.customerId }}</td>
+            <td>#{{ b.vehicleId }}</td>
+            <td>Package #{{ b.packageId }}</td>
+            <td>
+              @if (b.washerProfileId) {
+                <span class="gcw-badge gcw-badge-info">Washer #{{ b.washerProfileId }}</span>
+              } @else {
+                <span class="gcw-badge gcw-badge-warning">Unassigned</span>
+              }
+            </td>
+            <td><app-status-badge [status]="b.status" /></td>
+            <td><strong>{{ b.totalAmount | currency }}</strong></td>
+            <td>{{ b.createdAt | date: 'short' }}</td>
+            <td class="text-right">
+              <div class="table-actions">
+                <button class="gcw-btn gcw-btn-sm gcw-btn-outline" (click)="openBookingDetails(b)" title="View Complete Booking Details">
+                  View
+                </button>
+                <button class="gcw-btn gcw-btn-sm gcw-btn-outline" (click)="openAssignModal(b)">
+                  {{ b.washerProfileId ? 'Reassign' : 'Dispatch' }}
+                </button>
+                <button class="gcw-btn gcw-btn-sm gcw-btn-outline" (click)="openTimelineModal(b)" title="View State Timeline">
+                  Timeline
+                </button>
+                @if (b.status !== 'CANCELLED' && b.status !== 'COMPLETED' && b.status !== 'REFUNDED') {
+                  <button class="gcw-btn gcw-btn-sm gcw-btn-danger" (click)="openCancelModal(b)">
+                    Cancel
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="empty-state">
+              @if (loading()) {
+                <span>Loading bookings...</span>
+              } @else {
+                <span>No bookings found matching selected filters.</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Reusable Server-Side Pagination -->
+  <app-pagination
+    [currentPage]="currentPage()"
+    [pageSize]="pageSize()"
+    [totalElements]="totalElements()"
+    [pageSizeOptions]="[10, 20, 50]"
+    (pageChange)="onPageChange($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
+  />
+</div>
+
+<!-- Comprehensive Booking Details Modal -->
+@if (selectedBooking()) {
+  <div class="gcw-modal-backdrop" (click)="closeBookingDetails()">
+    <div class="gcw-modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>Booking #GCW{{ selectedBooking()?.id }}</h3>
+          <span class="modal-subtitle">Created: {{ selectedBooking()?.createdAt | date: 'medium' }} &bull; Type: {{ selectedBooking()?.bookingType }}</span>
+        </div>
+        <button class="btn-close" (click)="closeBookingDetails()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Overview Grid -->
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Status</span>
+            <span class="detail-val"><app-status-badge [status]="selectedBooking()!.status" /></span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Customer Profile</span>
+            <span class="detail-val">Customer #{{ selectedBooking()?.customerId }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Vehicle ID</span>
+            <span class="detail-val">Vehicle #{{ selectedBooking()?.vehicleId }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Package</span>
+            <span class="detail-val">Package #{{ selectedBooking()?.packageId }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Assigned Washer</span>
+            <span class="detail-val">
+              @if (selectedBooking()?.washerProfileId) {
+                <span class="gcw-badge gcw-badge-info">Washer #{{ selectedBooking()?.washerProfileId }}</span>
+              } @else {
+                <span class="gcw-badge gcw-badge-warning">Unassigned</span>
+              }
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Scheduled For</span>
+            <span class="detail-val">{{ (selectedBooking()?.scheduledAt | date: 'medium') || 'Immediate (Wash Now)' }}</span>
+          </div>
+        </div>
+
+        <!-- Financial Breakdown -->
+        <div class="section-divider">
+          <h4>Financial Breakdown</h4>
+        </div>
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Package Base Price</span>
+            <span class="detail-val">${{ selectedBooking()?.packagePrice || 0 }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Add-Ons Total</span>
+            <span class="detail-val">${{ selectedBooking()?.addOnTotal || 0 }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Discount / Promo</span>
+            <span class="detail-val">-${{ selectedBooking()?.discountAmount || 0 }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Surge / Additional</span>
+            <span class="detail-val">+${{ (selectedBooking()?.surgeAmount || 0) + (selectedBooking()?.additionalCharges || 0) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Total Amount</span>
+            <span class="detail-val font-green font-bold">${{ selectedBooking()?.totalAmount || 0 }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Promo Code</span>
+            <span class="detail-val">{{ selectedBooking()?.promotionCode || 'None' }}</span>
+          </div>
+        </div>
+
+        <!-- Water Usage / Sustainability -->
+        <div class="section-divider">
+          <h4>Water Sustainability &amp; Usage</h4>
+        </div>
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Allocated Water</span>
+            <span class="detail-val">{{ bookingWaterUsage()?.allocatedWaterLiters || selectedBooking()?.allocatedWaterLiters || 40 }} Liters</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Actual Water Used</span>
+            <span class="detail-val">{{ bookingWaterUsage()?.actualWaterUsedLiters || 'Pending completion' }} Liters</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Water Saved vs Baseline</span>
+            <span class="detail-val font-green">
+              {{ bookingWaterUsage()?.waterSavedLiters || 'Estimated 150-200' }} Liters saved
+            </span>
+          </div>
+        </div>
+
+        <!-- Cancellation details if applicable -->
+        @if (selectedBooking()?.cancellationReason) {
+          <div class="section-divider">
+            <h4 class="text-danger">Cancellation Information</h4>
+          </div>
+          <div class="cancellation-box">
+            <strong>Reason:</strong> {{ selectedBooking()?.cancellationReason }}
+            @if (selectedBooking()?.cancellationFeeAmount) {
+              <span> &bull; Cancellation fee applied: ${{ selectedBooking()?.cancellationFeeAmount }}</span>
+            }
+          </div>
+        }
+
+        <!-- Customer Instructions -->
+        @if (selectedBooking()?.customerInstructions) {
+          <div class="section-divider">
+            <h4>Customer Instructions</h4>
+          </div>
+          <p class="instructions-text">{{ selectedBooking()?.customerInstructions }}</p>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="gcw-btn gcw-btn-outline" (click)="selectedBooking() && openAssignModal(selectedBooking()!)">
+          {{ selectedBooking()?.washerProfileId ? 'Reassign Washer' : 'Dispatch Washer' }}
+        </button>
+        <button class="gcw-btn gcw-btn-outline" (click)="selectedBooking() && openTimelineModal(selectedBooking()!)">
+          View State Timeline
+        </button>
+        @if (selectedBooking()?.status !== 'CANCELLED' && selectedBooking()?.status !== 'COMPLETED' && selectedBooking()?.status !== 'REFUNDED') {
+          <button class="gcw-btn gcw-btn-danger" (click)="selectedBooking() && openCancelModal(selectedBooking()!)">
+            Cancel Booking
+          </button>
+        }
+        <button class="gcw-btn gcw-btn-outline" (click)="closeBookingDetails()">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Assign Washer Modal -->
+@if (assigningBooking()) {
+  <div class="gcw-modal-backdrop" (click)="closeAssignModal()">
+    <div class="gcw-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Dispatch Washer for #GCW{{ assigningBooking()?.id }}</h3>
+        <button class="btn-close" (click)="closeAssignModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Select Active Washer Partner</label>
+          <select class="gcw-input" [(ngModel)]="selectedWasherId">
+            @for (w of activeWashers(); track w.id) {
+              <option [value]="w.id">
+                #{{ w.id }} - {{ w.fullName }} (★ {{ w.averageRating || 5.0 | number: '1.1-1' }})
+              </option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Dispatch Note / Reason</label>
+          <input type="text" class="gcw-input" [(ngModel)]="assignReason" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="gcw-btn gcw-btn-outline" (click)="closeAssignModal()">Cancel</button>
+        <button class="gcw-btn gcw-btn-primary" (click)="confirmAssignment()" [disabled]="!selectedWasherId">
+          Confirm Dispatch
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- State Timeline Modal -->
+@if (timelineBooking()) {
+  <div class="gcw-modal-backdrop" (click)="closeTimelineModal()">
+    <div class="gcw-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Lifecycle Timeline for #GCW{{ timelineBooking()?.id }}</h3>
+        <button class="btn-close" (click)="closeTimelineModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="timeline-list">
+          @for (e of timelineEvents(); track $index) {
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <strong>{{ e.status || e.eventType || e.state }}</strong>
+                <p>{{ e.notes || e.description || 'Lifecycle progression' }}</p>
+                <small>{{ e.timestamp || e.createdAt | date: 'medium' }}</small>
+              </div>
+            </div>
+          } @empty {
+            <p class="empty-docs">No timeline progression events recorded.</p>
+          }
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="gcw-btn gcw-btn-outline" (click)="closeTimelineModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Cancel Booking Modal -->
+@if (cancellingBooking()) {
+  <div class="gcw-modal-backdrop" (click)="closeCancelModal()">
+    <div class="gcw-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Cancel Booking #GCW{{ cancellingBooking()?.id }}</h3>
+        <button class="btn-close" (click)="closeCancelModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="warning-text">Are you sure you want to administratively cancel this booking? This will halt dispatch and process eligible payment refunds according to policy.</p>
+        <div class="form-group">
+          <label>Cancellation Reason</label>
+          <textarea class="gcw-input" rows="3" [(ngModel)]="cancelReason"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="gcw-btn gcw-btn-outline" (click)="closeCancelModal()">Go Back</button>
+        <button class="gcw-btn gcw-btn-danger" (click)="confirmCancel()">Confirm Cancellation</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,165 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Wash Package Catalog</h1>
+    <p>Define service packages, allocated water quotas, vehicle suitability, and washer checklist tasks.</p>
+  </div>
+  <button class="gcw-btn gcw-btn-primary" (click)="openCreateModal()">
+    + Create New Package
+  </button>
+</div>
+
+@if (toastMessage()) {
+  <div class="gcw-alert gcw-alert-success">{{ toastMessage() }}</div>
+}
+
+<div class="packages-grid">
+  @for (p of packages(); track p.id) {
+    <div class="package-card" [class.inactive]="!p.active">
+      <div class="package-card-header">
+        <div>
+          <h3>{{ p.name }}</h3>
+          <span class="price-tag">{{ p.price | currency: 'USD' }}</span>
+        </div>
+        <span class="gcw-badge" [class.gcw-badge-success]="p.active" [class.gcw-badge-danger]="!p.active">
+          {{ p.active ? 'Active' : 'Inactive' }}
+        </span>
+      </div>
+
+      <p class="pkg-desc">{{ p.description }}</p>
+
+      <div class="meta-row">
+        <div class="meta-item">
+          <span class="meta-label">Allocated Water:</span>
+          <strong>{{ p.allocatedWaterLiters }} Liters</strong>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Est. Duration:</span>
+          <strong>{{ p.durationMinutes }} mins</strong>
+        </div>
+      </div>
+
+      <div class="checklist-section">
+        <span class="section-title">Checklist Tasks ({{ p.tasks.length }}):</span>
+        <ul class="task-list">
+          @for (t of p.tasks; track t.id) {
+            <li>
+              <span>{{ t.displayOrder }}. {{ t.name }}</span>
+              @if (t.mandatory) {
+                <span class="req-tag">Required</span>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+
+      <div class="vehicle-types-section">
+        <span class="section-title">Suitable Vehicles:</span>
+        <div class="vt-tags">
+          @for (vt of p.suitableVehicleTypes; track vt) {
+            <span class="vt-tag">{{ vt }}</span>
+          } @empty {
+            <span class="vt-all">All Vehicle Types</span>
+          }
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="gcw-btn gcw-btn-sm gcw-btn-outline" (click)="openEditModal(p)">
+          Edit Package
+        </button>
+        <button
+          class="gcw-btn gcw-btn-sm"
+          [class.gcw-btn-danger]="p.active"
+          [class.gcw-btn-success]="!p.active"
+          (click)="toggleActive(p)"
+        >
+          {{ p.active ? 'Deactivate' : 'Activate' }}
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Create / Edit Package Modal -->
+@if (showModal()) {
+  <div class="gcw-modal-backdrop" (click)="closeModal()">
+    <div class="gcw-modal-card wide-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editingPackageId() ? 'Edit Wash Package #' + editingPackageId() : 'Create New Wash Package' }}</h3>
+        <button class="btn-close" (click)="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body modal-scroll">
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label>Package Name</label>
+            <input type="text" class="gcw-input" [(ngModel)]="name" placeholder="e.g. Eco Deluxe Polish" />
+          </div>
+          <div class="form-group flex-1">
+            <label>Base Price ($)</label>
+            <input type="number" step="0.5" class="gcw-input" [(ngModel)]="price" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Package Description</label>
+          <textarea class="gcw-input" rows="2" [(ngModel)]="description" placeholder="Description visible to customers..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Allocated Water (Liters)</label>
+            <input type="number" class="gcw-input" [(ngModel)]="allocatedWaterLiters" />
+            <small class="hint">Benchmark used to calculate customer water savings vs baseline.</small>
+          </div>
+          <div class="form-group">
+            <label>Estimated Duration (Minutes)</label>
+            <input type="number" class="gcw-input" [(ngModel)]="durationMinutes" />
+          </div>
+        </div>
+
+        <!-- Task Checklist Builder -->
+        <div class="form-section">
+          <div class="section-header">
+            <label>Washer Task Checklist</label>
+            <button type="button" class="gcw-btn gcw-btn-sm gcw-btn-outline" (click)="addTask()">+ Add Task</button>
+          </div>
+          <div class="tasks-builder">
+            @for (t of tasks; track $index) {
+              <div class="task-builder-row">
+                <span class="task-order">{{ $index + 1 }}</span>
+                <input type="text" class="gcw-input task-name-input" [(ngModel)]="t.name" placeholder="Task name..." />
+                <label class="mandatory-chk">
+                  <input type="checkbox" [(ngModel)]="t.mandatory" /> Mandatory
+                </label>
+                <button type="button" class="btn-del" (click)="removeTask($index)">&times;</button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Suitable Vehicle Types -->
+        <div class="form-section">
+          <label>Suitable Vehicle Types</label>
+          <div class="vt-checkbox-grid">
+            @for (vt of allVehicleTypes; track vt) {
+              <label class="vt-check-label">
+                <input
+                  type="checkbox"
+                  [checked]="suitableVehicleTypes.includes(vt)"
+                  (change)="toggleVehicleType(vt)"
+                />
+                {{ vt }}
+              </label>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="gcw-btn gcw-btn-outline" (click)="closeModal()">Cancel</button>
+        <button class="gcw-btn gcw-btn-primary" (click)="savePackage()">
+          {{ editingPackageId() ? 'Save Changes' : 'Create Package' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

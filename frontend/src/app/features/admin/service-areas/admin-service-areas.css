@@ -1,0 +1,27 @@
+.pincode-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pincode-pill {
+  background: var(--gcw-bg);
+  border: 1px solid var(--gcw-border);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.flex-1 { flex: 1; }
+
+.empty-state {
+  text-align: center;
+  padding: 2rem !important;
+  color: var(--gcw-text-muted);
+}
