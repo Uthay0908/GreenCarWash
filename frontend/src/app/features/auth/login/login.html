@@ -1,0 +1,223 @@
+<section class="auth-section">
+  <div class="auth-container">
+    <div class="auth-card gcw-card">
+      <div class="auth-brand">
+        <div class="brand-badge">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+            <circle cx="7" cy="17" r="2"/>
+            <path d="M9 17h6"/>
+            <circle cx="17" cy="17" r="2"/>
+          </svg>
+          <span>GreenCarWash</span>
+        </div>
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-subtitle">Sign in with your email and password to access your dashboard.</p>
+      </div>
+
+      @if (returnUrlNotice()) {
+        <div class="auth-notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>{{ returnUrlNotice() }}</span>
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <div class="auth-alert-error" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="auth-form">
+        <div class="gcw-field">
+          <label class="gcw-label" for="loginEmail">Email address</label>
+          <div class="input-wrapper">
+            <input
+              id="loginEmail"
+              type="email"
+              class="gcw-input"
+              formControlName="email"
+              placeholder="name@example.com"
+              autocomplete="email"
+            />
+            <span class="input-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+            </span>
+          </div>
+          @if (f.email.invalid && f.email.touched) {
+            <div class="gcw-field-error">Please enter a valid email address.</div>
+          }
+        </div>
+
+        <div class="gcw-field">
+          <div class="password-label-row">
+            <label class="gcw-label" for="loginPassword">Password</label>
+            <a routerLink="/forgot-password" class="forgot-link">Forgot password?</a>
+          </div>
+          <div class="input-wrapper">
+            <input
+              id="loginPassword"
+              [type]="showPassword() ? 'text' : 'password'"
+              class="gcw-input"
+              formControlName="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              (click)="togglePassword()"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+            >
+              @if (showPassword()) {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (f.password.invalid && f.password.touched) {
+            <div class="gcw-field-error">Password must be at least 6 characters.</div>
+          }
+        </div>
+
+        <div class="auth-row">
+          <label class="gcw-checkbox-row">
+            <input type="checkbox" formControlName="rememberMe" />
+            <span>Remember me</span>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          class="gcw-btn gcw-btn-primary gcw-btn-block submit-btn"
+          [disabled]="submitting()"
+        >
+          @if (submitting()) {
+            <span class="spinner"></span>
+            <span>Signing in…</span>
+          } @else {
+            <span>Sign In</span>
+            <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          }
+        </button>
+      </form>
+
+      <!-- Social Login Options -->
+      <div class="auth-divider">
+        <span>or continue with</span>
+      </div>
+
+      <div class="social-login-grid">
+        <button
+          type="button"
+          class="social-btn social-google"
+          (click)="loginWithGoogle()"
+          [disabled]="socialLoggingIn()"
+          title="Sign in with Google"
+        >
+          <svg class="social-icon" viewBox="0 0 24 24" width="20" height="20">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3h3.88c2.27-2.09 3.66-5.17 3.66-9.09z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.94H1.24v3.09C3.26 21.36 7.34 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.31c-.25-.72-.38-1.49-.38-2.31s.14-1.59.38-2.31V6.6H1.24C.45 8.18 0 9.99 0 12s.45 3.82 1.24 5.4l4.04-3.09z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.24 6.6l4.04 3.09c.95-2.84 3.6-4.94 6.72-4.94z"/>
+          </svg>
+          <span>Google</span>
+        </button>
+
+        <button
+          type="button"
+          class="social-btn social-facebook"
+          (click)="loginWithFacebook()"
+          [disabled]="socialLoggingIn()"
+          title="Sign in with Facebook"
+        >
+          <svg class="social-icon" viewBox="0 0 24 24" width="20" height="20" fill="#1877F2">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>
+          <span>Facebook</span>
+        </button>
+      </div>
+
+      <!-- Quick test credentials helper for real API authentication testing -->
+      <div class="test-accounts-panel">
+        <div class="test-accounts-header">
+          <span class="test-badge">DEV / DEMO</span>
+          <span class="test-label">Quick fill seed credentials:</span>
+        </div>
+        <div class="test-buttons-grid">
+          <button
+            type="button"
+            class="test-account-chip"
+            (click)="fillCredentials('CUSTOMER')"
+            title="customer1@example.com (CUSTOMER role)"
+          >
+            <span class="role-dot dot-customer"></span>
+            <span>Customer</span>
+          </button>
+          <button
+            type="button"
+            class="test-account-chip"
+            (click)="fillCredentials('WASHER')"
+            title="washer1@example.com (Arun Kumar - WASHER role)"
+          >
+            <span class="role-dot dot-washer"></span>
+            <span>Washer (Arun Kumar)</span>
+          </button>
+          <button
+            type="button"
+            class="test-account-chip"
+            (click)="fillCredentials('WASHER_KARTHIK')"
+            title="washer2@example.com (Karthik S - WASHER role)"
+          >
+            <span class="role-dot dot-washer"></span>
+            <span>Washer (Karthik S)</span>
+          </button>
+          <button
+            type="button"
+            class="test-account-chip"
+            (click)="fillCredentials('ADMIN')"
+            title="greencarwashproject@gmail.com (ADMIN role)"
+          >
+            <span class="role-dot dot-admin"></span>
+            <span>Admin</span>
+          </button>
+          <button
+            type="button"
+            class="test-account-chip"
+            (click)="fillCredentials('CORPORATE')"
+            title="corporate1@example.com (CORPORATE role)"
+          >
+            <span class="role-dot dot-corporate"></span>
+            <span>Corporate</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="auth-card-footer">
+        <p>Don't have an account yet? <a routerLink="/register" class="auth-link">Create an account</a></p>
+      </div>
+    </div>
+  </div>
+</section>
