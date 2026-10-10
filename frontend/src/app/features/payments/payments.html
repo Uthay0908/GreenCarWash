@@ -1,0 +1,37 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Payments</h1>
+    <p>Your payment history across all bookings.</p>
+  </div>
+</div>
+
+<div class="gcw-card">
+  <div class="gcw-table-wrap">
+    <table class="gcw-table">
+      <thead>
+        <tr>
+          <th>Payment ID</th>
+          <th>Booking ID</th>
+          <th>Amount</th>
+          <th>Method</th>
+          <th>Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of payments(); track p.id) {
+          <tr>
+            <td>#{{ p.id }}</td>
+            <td>#{{ p.bookingId }}</td>
+            <td>${{ p.amount.toFixed(2) }}</td>
+            <td>{{ p.flow === 'ESCROW' ? 'Card (Escrow)' : 'Card' }}</td>
+            <td>{{ p.createdAt | date: 'mediumDate' }}</td>
+            <td><app-status-badge [status]="p.status" /></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="gcw-empty">No payments yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
