@@ -1,0 +1,506 @@
+/* =========================================================
+   GreenCarWash Public Landing Page Stylesheet
+   Matches Section 1 of the Reference Design Specification
+   ========================================================= */
+
+.landing-page {
+  background: #04120c;
+  color: #0f172a;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  padding-bottom: 4rem;
+}
+
+
+/* Toast Alert */
+.toast-alert {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: #0f172a;
+  color: #ffffff;
+  border-left: 4px solid #10b981;
+  padding: 0.85rem 1.4rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  z-index: 999;
+}
+
+/* Hero Section */
+.hero-section {
+  padding: 3.5rem 2rem 3rem;
+  background: radial-gradient(circle at 75% 30%, #0d3826 0%, #04120c 70%);
+  color: #ffffff;
+}
+
+.hero-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.hero-content {
+  flex: 1;
+  max-width: 600px;
+}
+
+.eco-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 9999px;
+  color: #10b981;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  margin-bottom: 1.25rem;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.hero-headline {
+  font-size: 3.4rem;
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0 0 1rem;
+  letter-spacing: -0.02em;
+}
+
+.hero-headline .highlight {
+  color: #10b981;
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-tagline {
+  color: #94a3b8;
+  font-size: 1.15rem;
+  margin: 0 0 2rem;
+}
+
+.hero-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 2rem;
+}
+
+.highlight-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.5rem;
+}
+
+.pill-icon { font-size: 1.2rem; }
+.pill-text strong { display: block; font-size: 0.8rem; color: #ffffff; }
+.pill-text span { font-size: 0.72rem; color: #94a3b8; }
+
+.hero-ctas {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.btn-primary-hero {
+  background: #10b981;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+  transition: all 0.2s;
+}
+
+.btn-primary-hero:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+.btn-video {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  padding: 0.5rem 0.85rem;
+}
+
+.play-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.hero-car-visual {
+  flex: 1;
+  max-width: 620px;
+  position: relative;
+}
+
+.car-img {
+  width: 100%;
+  height: auto;
+  border-radius: 0.85rem;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  display: block;
+}
+
+/* 3 Triad Cards Section */
+.triad-section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.triad-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.triad-card {
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 0.85rem;
+  padding: 1.5rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.triad-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.triad-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.view-all-link {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #10b981;
+  text-decoration: none;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
+}
+
+/* Card 1: Our Services */
+.services-subgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+  flex: 1;
+}
+
+.service-tile {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tile-img-wrap {
+  height: 95px;
+  overflow: hidden;
+}
+
+.tile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.service-tile:hover .tile-img {
+  transform: scale(1.05);
+}
+
+.tile-info {
+  padding: 0.75rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.tile-name {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.tile-desc {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #64748b;
+  flex: 1;
+}
+
+.btn-tile-icon {
+  align-self: flex-start;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-top: 0.4rem;
+}
+
+/* Card 2: Wash Packages */
+.packages-subgrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+  flex: 1;
+}
+
+.package-tile {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.6rem;
+  padding: 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.package-tile.popular {
+  border-color: #10b981;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15);
+}
+
+.popular-tag {
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+}
+
+.pkg-name {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pkg-price {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0.25rem 0;
+}
+
+.pkg-duration {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-bottom: 0.75rem;
+}
+
+.pkg-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.pkg-features li {
+  font-size: 0.72rem;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pkg-features .chk {
+  color: #10b981;
+  font-weight: 800;
+}
+
+.btn-pkg-select {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.btn-pkg-select:hover {
+  background: #e2e8f0;
+}
+
+.btn-pkg-select.solid {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.btn-pkg-select.solid:hover {
+  background: #059669;
+}
+
+/* Card 3: About & Contact */
+.mission-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 0.6rem 0 1.25rem;
+}
+
+.mission-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #10b981;
+}
+
+.mission-text {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.mission-car-thumb {
+  width: 85px;
+  height: 55px;
+  object-fit: cover;
+  border-radius: 0.45rem;
+}
+
+.contact-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.contact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.contact-item strong { display: block; font-size: 0.75rem; color: #0f172a; }
+.contact-item p { margin: 0; font-size: 0.7rem; color: #64748b; }
+
+.mini-map {
+  height: 55px;
+  background: #e2e8f0;
+  border-radius: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: #475569;
+  font-weight: 600;
+  margin-bottom: 0.85rem;
+}
+
+.contact-input-row {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.contact-input {
+  flex: 1;
+  font-size: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.4rem;
+  padding: 0.45rem 0.65rem;
+}
+
+.btn-send {
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-send:hover {
+  background: #1e293b;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .hero-container { flex-direction: column; text-align: center; }
+  .hero-highlights { grid-template-columns: 1fr; }
+  .hero-ctas { justify-content: center; }
+  .triad-grid { grid-template-columns: 1fr; }
+}
