@@ -1,0 +1,353 @@
+<div class="gcw-catalog-page">
+  <!-- Page Header -->
+  <div class="catalog-header-area">
+    <div class="header-titles">
+      <span class="sub-label">GREEN STEAM CATALOG</span>
+      <h1 class="main-title">Doorstep Car Care Packages</h1>
+      <p class="meta-desc">
+        State-of-the-art steam technology conserving up to 95% water while delivering pristine showroom finish.
+      </p>
+    </div>
+
+    <div class="catalog-tabs-bar">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.is-active]="activeTab() === 'PACKAGES'"
+        (click)="setActiveTab('PACKAGES')"
+      >
+        🚿 Wash Packages ({{ packages().length }})
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.is-active]="activeTab() === 'ADDONS'"
+        (click)="setActiveTab('ADDONS')"
+      >
+        ✨ Add-On Treatments ({{ addOns().length }})
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="catalog-loading-grid">
+      <app-customer-card><app-customer-skeleton lines="6" /></app-customer-card>
+      <app-customer-card><app-customer-skeleton lines="6" /></app-customer-card>
+      <app-customer-card><app-customer-skeleton lines="6" /></app-customer-card>
+    </div>
+  }
+
+  <!-- Error State -->
+  @else if (error()) {
+    <div class="gcw-error-banner">
+      <span class="error-icon">⚠️</span>
+      <span class="error-msg">{{ error() }}</span>
+      <app-customer-button variant="danger" size="sm" (clicked)="loadCatalog()">
+        ↻ Retry
+      </app-customer-button>
+    </div>
+  }
+
+  <!-- PACKAGES TAB -->
+  @else if (activeTab() === 'PACKAGES') {
+    <!-- Filters Strip -->
+    <div class="filters-container-bar">
+      <!-- Category Filter -->
+      <div class="filter-group">
+        <span class="filter-lbl">Service Scope:</span>
+        <div class="chips-row">
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="selectedCategoryFilter() === 'ALL'"
+            (click)="setCategoryFilter('ALL')"
+          >
+            All Packages
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="selectedCategoryFilter() === 'EXTERIOR'"
+            (click)="setCategoryFilter('EXTERIOR')"
+          >
+            Exterior Focus
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="selectedCategoryFilter() === 'INTERIOR'"
+            (click)="setCategoryFilter('INTERIOR')"
+          >
+            Interior Detox
+          </button>
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="selectedCategoryFilter() === 'PREMIUM'"
+            (click)="setCategoryFilter('PREMIUM')"
+          >
+            Ceramic & Premium
+          </button>
+        </div>
+      </div>
+
+      <!-- Vehicle Filter -->
+      @if (vehicleFilterOptions().length > 1) {
+        <div class="filter-group vehicle-filter-group">
+          <span class="filter-lbl">Compatible With:</span>
+          <div class="chips-row">
+            @for (vType of vehicleFilterOptions(); track vType) {
+              <button
+                type="button"
+                class="filter-chip vehicle-chip"
+                [class.active]="selectedVehicleFilter() === vType"
+                (click)="setVehicleFilter(vType)"
+              >
+                {{ vType === 'ALL' ? 'All Vehicles' : vType }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Empty Filtered Results -->
+    @if (filteredPackages().length === 0) {
+      <app-customer-card>
+        <app-customer-empty-state
+          title="No Matching Packages"
+          message="No active wash packages match your selected filter criteria. Try choosing 'All Packages'."
+          actionLabel="Reset Filters"
+          icon="🔍"
+          (actionClicked)="setVehicleFilter('ALL'); setCategoryFilter('ALL')"
+        />
+      </app-customer-card>
+    }
+
+    <!-- Packages Cards Grid -->
+    @else {
+      <div class="packages-card-grid">
+        @for (pkg of filteredPackages(); track pkg.id) {
+          <div class="package-premium-card">
+            <!-- Card Image Box -->
+            <div class="pkg-image-wrapper">
+              <img [src]="getPackageImage(pkg)" [alt]="pkg.name" class="pkg-cover-img" />
+              <div class="pkg-price-badge">
+                <span class="currency-symbol">$</span>
+                <span class="price-val">{{ pkg.price | number:'1.0-0' }}</span>
+              </div>
+            </div>
+
+            <!-- Card Content Body -->
+            <div class="pkg-card-body">
+              <div class="pkg-header-row">
+                <h3 class="pkg-card-title">{{ pkg.name }}</h3>
+              </div>
+
+              <!-- Metrics Strip (Duration & Eco Water Saved) -->
+              <div class="pkg-metrics-row">
+                <span class="metric-pill duration-pill">
+                  ⏱️ {{ pkg.durationMinutes }} mins
+                </span>
+                <span class="metric-pill water-pill">
+                  💧 {{ pkg.allocatedWaterLiters }} L Water Quota
+                </span>
+              </div>
+
+              <!-- Description -->
+              <p class="pkg-desc-text">{{ pkg.description }}</p>
+
+              <!-- Vehicle Compatibility Chips -->
+              @if (pkg.suitableVehicleTypes && pkg.suitableVehicleTypes.length > 0) {
+                <div class="pkg-compatibility-row">
+                  <span class="compat-label">Suits:</span>
+                  @for (vt of pkg.suitableVehicleTypes; track vt) {
+                    <span class="compat-tag">{{ vt }}</span>
+                  }
+                </div>
+              }
+
+              <!-- Included Tasks Snippet -->
+              @if (pkg.tasks && pkg.tasks.length > 0) {
+                <div class="pkg-tasks-preview">
+                  <span class="tasks-heading">Includes {{ pkg.tasks.length }} Precision Steps:</span>
+                  <ul class="tasks-bullet-list">
+                    @for (task of pkg.tasks.slice(0, 3); track task.id) {
+                      <li class="task-item-bullet">
+                        <span class="check-icon">✓</span>
+                        <span class="task-name-text">{{ task.name }}</span>
+                        @if (task.mandatory) {
+                          <span class="mandatory-tag">Required</span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                  @if (pkg.tasks.length > 3) {
+                    <span class="more-tasks-text">+ {{ pkg.tasks.length - 3 }} more specialized treatments</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Card Actions Footer -->
+            <div class="pkg-actions-strip">
+              <button
+                type="button"
+                class="btn-details-ghost"
+                (click)="openPackageDetails(pkg)"
+              >
+                View Full Details
+              </button>
+
+              <app-customer-button
+                variant="primary"
+                size="md"
+                icon="✨"
+                (clicked)="bookPackage(pkg)"
+              >
+                Book This Package
+              </app-customer-button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- ADD-ONS TAB -->
+  @else if (activeTab() === 'ADDONS') {
+    <div class="addons-intro-box">
+      <h3>Personalize Your Detailing Experience</h3>
+      <p>Targeted eco treatments you can stack on top of any steam wash package.</p>
+    </div>
+
+    @if (addOns().length === 0) {
+      <app-customer-card>
+        <app-customer-empty-state
+          title="No Add-Ons Available"
+          message="Additional treatments will be listed here soon."
+          actionLabel="Refresh"
+          icon="✨"
+          (actionClicked)="loadCatalog()"
+        />
+      </app-customer-card>
+    } @else {
+      <div class="addons-card-grid">
+        @for (addon of addOns(); track addon.id) {
+          <div class="addon-detail-card">
+            <div class="addon-card-top">
+              <div class="addon-title-box">
+                <span class="addon-sparkle-icon">✨</span>
+                <h4 class="addon-name">{{ addon.name }}</h4>
+              </div>
+              <div class="addon-price-tag">
+                <span class="addon-curr">$</span>
+                <span class="addon-amt">{{ addon.price | number:'1.0-0' }}</span>
+              </div>
+            </div>
+
+            <p class="addon-desc">{{ addon.description }}</p>
+
+            @if (addon.tasks && addon.tasks.length > 0) {
+              <div class="addon-tasks-list">
+                <span class="addon-tasks-lbl">Service Protocol:</span>
+                <ul>
+                  @for (t of addon.tasks; track t.id) {
+                    <li>✓ {{ t.name }}</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <div class="addon-action-row">
+              <app-customer-button
+                variant="secondary"
+                size="sm"
+                icon="➕"
+                (clicked)="bookWithAddon(addon)"
+              >
+                Add to Wash Booking
+              </app-customer-button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- Package Details Modal -->
+  @if (detailPackage()) {
+    <app-customer-modal
+      [isOpen]="detailPackage() !== null"
+      [title]="detailPackage()!.name"
+      [maxWidth]="640"
+      (closed)="closePackageDetails()"
+    >
+      <div class="package-modal-content">
+        <div class="modal-banner-image">
+          <img [src]="getPackageImage(detailPackage()!)" [alt]="detailPackage()!.name" class="modal-img" />
+          <div class="modal-price-pill">
+            ${{ detailPackage()!.price | number:'1.0-0' }}
+          </div>
+        </div>
+
+        <p class="modal-desc">{{ detailPackage()!.description }}</p>
+
+        <!-- Stats Bar -->
+        <div class="modal-stats-bar">
+          <div class="modal-stat-box">
+            <span class="stat-lbl">DURATION</span>
+            <span class="stat-val">⏱️ {{ detailPackage()!.durationMinutes }} Minutes</span>
+          </div>
+          <div class="modal-stat-box">
+            <span class="stat-lbl">ECO WATER ALLOCATION</span>
+            <span class="stat-val">💧 {{ detailPackage()!.allocatedWaterLiters }} Liters</span>
+          </div>
+          <div class="modal-stat-box">
+            <span class="stat-lbl">SUITABILITY</span>
+            <span class="stat-val">🚗 {{ (detailPackage()!.suitableVehicleTypes || []).join(', ') || 'All Vehicles' }}</span>
+          </div>
+        </div>
+
+        <!-- Full Tasks Checklist -->
+        <div class="modal-tasks-section">
+          <h4 class="tasks-section-title">Included Detailing Tasks ({{ (detailPackage()!.tasks || []).length }})</h4>
+          <div class="modal-tasks-flow">
+            @for (task of (detailPackage()!.tasks || []); track task.id; let idx = $index) {
+              <div class="modal-task-row">
+                <span class="task-seq-badge">{{ idx + 1 }}</span>
+                <div class="task-info-col">
+                  <span class="task-name-main">{{ task.name }}</span>
+                  <span class="task-order-hint">Step {{ task.displayOrder }} in service sequence</span>
+                </div>
+                @if (task.mandatory) {
+                  <span class="task-req-pill">Mandatory</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Modal Footer CTA -->
+        <div class="modal-cta-strip">
+          <app-customer-button
+            variant="secondary"
+            size="md"
+            (clicked)="closePackageDetails()"
+          >
+            Close
+          </app-customer-button>
+          <app-customer-button
+            variant="primary"
+            size="md"
+            icon="🚀"
+            (clicked)="bookPackage(detailPackage()!)"
+          >
+            Book This Package Now
+          </app-customer-button>
+        </div>
+      </div>
+    </app-customer-modal>
+  }
+</div>
