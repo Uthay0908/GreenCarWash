@@ -1,0 +1,1034 @@
+<div class="support-hub-container">
+  <!-- Top Hero Header -->
+  <header class="support-hero">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-icon">🌿</span>
+        <span>HELP & RESOLUTION CENTER</span>
+      </div>
+      <h1 class="hero-title">How can we help you today?</h1>
+      <p class="hero-subtitle">
+        Browse common questions, track support requests, or report quality and vehicle issues for quick resolution.
+      </p>
+    </div>
+
+    <div class="hero-actions">
+      <button
+        type="button"
+        class="gcw-btn gcw-btn-primary btn-hero-action"
+        (click)="openTicketModal()"
+      >
+        <span>🎫 New Ticket</span>
+      </button>
+      <button
+        type="button"
+        class="gcw-btn gcw-btn-secondary btn-hero-action"
+        (click)="openComplaintModal()"
+      >
+        <span>⚠️ File Complaint</span>
+      </button>
+      <button
+        type="button"
+        class="gcw-btn gcw-btn-secondary btn-hero-action"
+        (click)="openClaimModal()"
+      >
+        <span>🛡️ Damage Claim</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Global Success Notification -->
+  @if (successMessage()) {
+    <div class="gcw-alert gcw-alert-success animate-fade-in" role="status">
+      <span class="alert-icon">✅</span>
+      <div class="alert-content">{{ successMessage() }}</div>
+    </div>
+  }
+
+  <!-- Main Navigation Tabs -->
+  <nav class="support-tabs-nav" aria-label="Support navigation tabs">
+    <button
+      type="button"
+      class="tab-button"
+      [class.active]="activeTab() === 'faq'"
+      (click)="setTab('faq')"
+    >
+      <span class="tab-icon">📚</span>
+      <span class="tab-label">FAQ & Help</span>
+      <span class="tab-badge">{{ faqs().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-button"
+      [class.active]="activeTab() === 'tickets'"
+      (click)="setTab('tickets')"
+    >
+      <span class="tab-icon">🎫</span>
+      <span class="tab-label">Support Tickets</span>
+      <span class="tab-badge">{{ tickets().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-button"
+      [class.active]="activeTab() === 'complaints'"
+      (click)="setTab('complaints')"
+    >
+      <span class="tab-icon">⚠️</span>
+      <span class="tab-label">Complaints</span>
+      <span class="tab-badge">{{ complaints().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-button"
+      [class.active]="activeTab() === 'claims'"
+      (click)="setTab('claims')"
+    >
+      <span class="tab-icon">🛡️</span>
+      <span class="tab-label">Damage Claims</span>
+      <span class="tab-badge">{{ claims().length }}</span>
+    </button>
+  </nav>
+
+  <!-- ============================================================ -->
+  <!-- TAB 1: FAQ & KNOWLEDGE BASE                                   -->
+  <!-- ============================================================ -->
+  @if (activeTab() === 'faq') {
+    <section class="tab-section faq-section animate-fade-in">
+      <!-- FAQ Search Bar -->
+      <div class="faq-search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input
+          type="search"
+          class="faq-search-input"
+          placeholder="Search frequently asked questions (e.g. waterless wash, refund, reschedule)..."
+          [value]="faqSearchQuery()"
+          (input)="faqSearchQuery.set($any($event.target).value)"
+        />
+        @if (faqSearchQuery()) {
+          <button type="button" class="btn-clear-search" (click)="faqSearchQuery.set('')">✕</button>
+        }
+      </div>
+
+      <!-- FAQ Category Filter Pills -->
+      <div class="faq-categories-row">
+        @for (cat of faqCategories(); track cat) {
+          <button
+            type="button"
+            class="cat-pill"
+            [class.active]="selectedFaqCategory() === cat"
+            (click)="selectedFaqCategory.set(cat)"
+          >
+            {{ cat === 'ALL' ? 'All Topics' : cat }}
+          </button>
+        }
+      </div>
+
+      <!-- FAQ Accordion List -->
+      <div class="faq-accordion-list">
+        @for (faq of filteredFaqs(); track faq.id) {
+          <article class="faq-item" [class.expanded]="isFaqExpanded(faq.id)">
+            <button
+              type="button"
+              class="faq-question-btn"
+              (click)="toggleFaq(faq.id)"
+              [attr.aria-expanded]="isFaqExpanded(faq.id)"
+            >
+              <div class="faq-q-left">
+                <span class="faq-category-tag">{{ faq.category || 'GENERAL' }}</span>
+                <span class="faq-question-text">{{ faq.question }}</span>
+              </div>
+              <span class="accordion-arrow">{{ isFaqExpanded(faq.id) ? '▲' : '▼' }}</span>
+            </button>
+
+            @if (isFaqExpanded(faq.id)) {
+              <div class="faq-answer-container animate-fade-in">
+                <p class="faq-answer-text">{{ faq.answer }}</p>
+
+                <div class="faq-feedback-row">
+                  <span class="feedback-label">Was this answer helpful?</span>
+                  @if (faqHelpfulFeedback()[faq.id] === undefined) {
+                    <div class="feedback-buttons">
+                      <button type="button" class="btn-feedback" (click)="setFaqFeedback(faq.id, true)">
+                        👍 Yes
+                      </button>
+                      <button type="button" class="btn-feedback" (click)="setFaqFeedback(faq.id, false)">
+                        👎 No
+                      </button>
+                    </div>
+                  } @else {
+                    <span class="feedback-thankyou">Thank you for your feedback!</span>
+                  }
+                </div>
+              </div>
+            }
+          </article>
+        } @empty {
+          <div class="empty-faq-state">
+            <span class="empty-icon">🔎</span>
+            <h3>No questions found matching your search</h3>
+            <p>Try searching with different terms or select a different category.</p>
+            <button type="button" class="gcw-btn gcw-btn-secondary" (click)="faqSearchQuery.set(''); selectedFaqCategory.set('ALL')">
+              Reset Filters
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Still Have Questions CTA Banner -->
+      <div class="faq-footer-cta">
+        <div class="cta-card">
+          <span class="cta-icon">🎫</span>
+          <h4>Can't find what you're looking for?</h4>
+          <p>Our dedicated customer support agents are ready to assist you.</p>
+          <button type="button" class="gcw-btn gcw-btn-primary" (click)="openTicketModal()">
+            Open a Support Ticket
+          </button>
+        </div>
+
+        <div class="cta-card">
+          <span class="cta-icon">⚠️</span>
+          <h4>Encountered a problem with a wash?</h4>
+          <p>File a complaint for instant QA inspection, refund, or rewash booking.</p>
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="openComplaintModal()">
+            File a Complaint
+          </button>
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- ============================================================ -->
+  <!-- TAB 2: SUPPORT TICKETS                                        -->
+  <!-- ============================================================ -->
+  @if (activeTab() === 'tickets') {
+    <section class="tab-section tickets-section animate-fade-in">
+      <div class="section-top-bar">
+        <div class="top-bar-left">
+          <h2 class="section-title">Support Tickets</h2>
+          <p class="section-subtitle">View your ticket history and communication with our support team.</p>
+        </div>
+
+        <button type="button" class="gcw-btn gcw-btn-primary" (click)="openTicketModal()">
+          + Create Ticket
+        </button>
+      </div>
+
+      <!-- Ticket Status Filters -->
+      <div class="filter-pills-row">
+        @for (st of ['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']; track st) {
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="ticketStatusFilter() === st"
+            (click)="ticketStatusFilter.set(st)"
+          >
+            {{ st === 'ALL' ? 'All Tickets' : (st | titlecase) }}
+          </button>
+        }
+      </div>
+
+      <!-- Tickets Grid / List -->
+      <div class="tickets-grid">
+        @for (t of filteredTickets(); track t.id) {
+          <article class="ticket-card" (click)="viewTicketDetails(t)">
+            <div class="ticket-card-header">
+              <span class="ticket-id-tag">Ticket #{{ t.id }}</span>
+              <div class="ticket-badges">
+                <span [class]="priorityBadgeClass(t.priority)">{{ t.priority || 'MEDIUM' }}</span>
+                <app-status-badge [status]="t.status" />
+              </div>
+            </div>
+
+            <h3 class="ticket-subject">{{ t.subject }}</h3>
+            <p class="ticket-desc-snippet">{{ t.description }}</p>
+
+            <div class="ticket-card-meta">
+              <div class="meta-item">
+                <span class="meta-icon">📁</span>
+                <span>{{ t.category || 'GENERAL' }}</span>
+              </div>
+              @if (t.bookingId) {
+                <div class="meta-item">
+                  <span class="meta-icon">🚗</span>
+                  <span>Booking #{{ t.bookingId }}</span>
+                </div>
+              }
+              <div class="meta-item">
+                <span class="meta-icon">📅</span>
+                <span>{{ t.createdAt | date: 'shortDate' }}</span>
+              </div>
+            </div>
+
+            <div class="ticket-card-footer">
+              @if (t.resolution) {
+                <span class="resolved-check">✅ Has resolution</span>
+              } @else {
+                <span class="pending-check">⏱️ In queue</span>
+              }
+              <button type="button" class="btn-view-ticket">
+                View Details →
+              </button>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-state-box">
+            <span class="empty-icon">🎫</span>
+            <h3>No Support Tickets Found</h3>
+            <p>You haven't opened any support tickets with this filter.</p>
+            <button type="button" class="gcw-btn gcw-btn-primary" (click)="openTicketModal()">
+              Open First Ticket
+            </button>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- ============================================================ -->
+  <!-- TAB 3: COMPLAINTS                                             -->
+  <!-- ============================================================ -->
+  @if (activeTab() === 'complaints') {
+    <section class="tab-section complaints-section animate-fade-in">
+      <div class="section-top-bar">
+        <div class="top-bar-left">
+          <h2 class="section-title">Service Complaints</h2>
+          <p class="section-subtitle">
+            Report service deficiencies for QA investigation, rewashes, wallet credits, or refunds.
+          </p>
+        </div>
+
+        <button type="button" class="gcw-btn gcw-btn-primary" (click)="openComplaintModal()">
+          + File Complaint
+        </button>
+      </div>
+
+      <!-- Complaint Status Filters -->
+      <div class="filter-pills-row">
+        @for (st of ['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED']; track st) {
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="complaintStatusFilter() === st"
+            (click)="complaintStatusFilter.set(st)"
+          >
+            {{ st === 'ALL' ? 'All Complaints' : (st | titlecase) }}
+          </button>
+        }
+      </div>
+
+      <!-- Complaints List -->
+      <div class="complaints-grid">
+        @for (c of filteredComplaints(); track c.id) {
+          <article class="complaint-card" (click)="viewComplaintDetails(c)">
+            <div class="complaint-card-header">
+              <div class="complaint-id-group">
+                <span class="complaint-id-tag">Complaint #{{ c.id }}</span>
+                <span class="booking-link-tag">Booking #{{ c.bookingId }}</span>
+              </div>
+              <span [class]="complaintStatusBadgeClass(c.status)">{{ c.status }}</span>
+            </div>
+
+            <!-- Resolution Decision Banner if Resolved -->
+            @if (c.resolutionDecision) {
+              <div class="decision-banner" [class.decision-refund]="c.resolutionDecision === 'REFUND'" [class.decision-credit]="c.resolutionDecision === 'CREDIT'" [class.decision-rewash]="c.resolutionDecision === 'REWASH'">
+                <span class="decision-icon">
+                  {{ c.resolutionDecision === 'REFUND' ? '💳' : (c.resolutionDecision === 'CREDIT' ? '🪙' : (c.resolutionDecision === 'REWASH' ? '🔄' : 'ℹ️')) }}
+                </span>
+                <div class="decision-text">
+                  <strong>Resolution: {{ c.resolutionDecision }}</strong>
+                  @if (c.creditAmount) {
+                    <span> · ${{ c.creditAmount }} credited</span>
+                  }
+                  @if (c.rewashRequested) {
+                    <span> · Complimentary rewash scheduled</span>
+                  }
+                </div>
+              </div>
+            }
+
+            <p class="complaint-desc-snippet">{{ c.description }}</p>
+
+            <!-- Washer Response Snippet if Washer Replied -->
+            @if (c.washerResponse) {
+              <div class="washer-response-box">
+                <div class="washer-response-header">
+                  <span class="washer-icon">🧑‍🔧</span>
+                  <span class="washer-label">Washer's Response:</span>
+                  <span class="washer-date">{{ c.washerRespondedAt | date: 'shortDate' }}</span>
+                </div>
+                <p class="washer-response-text">"{{ c.washerResponse }}"</p>
+              </div>
+            }
+
+            <div class="complaint-card-footer">
+              <span class="filed-date">Filed on {{ c.createdAt | date: 'mediumDate' }}</span>
+              <button type="button" class="btn-view-ticket">
+                View Resolution Details →
+              </button>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-state-box">
+            <span class="empty-icon">🤝</span>
+            <h3>No Complaints Filed</h3>
+            <p>You have not filed any complaints. Our team strives for zero-defect eco-washes!</p>
+            <button type="button" class="gcw-btn gcw-btn-primary" (click)="openComplaintModal()">
+              File a Complaint
+            </button>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- ============================================================ -->
+  <!-- TAB 4: DAMAGE CLAIMS                                          -->
+  <!-- ============================================================ -->
+  @if (activeTab() === 'claims') {
+    <section class="tab-section claims-section animate-fade-in">
+      <div class="section-top-bar">
+        <div class="top-bar-left">
+          <h2 class="section-title">Vehicle Damage Claims</h2>
+          <p class="section-subtitle">
+            Report accidental vehicle damage with photo evidence for inspection and claims approval.
+          </p>
+        </div>
+
+        <button type="button" class="gcw-btn gcw-btn-primary" (click)="openClaimModal()">
+          + Submit Damage Claim
+        </button>
+      </div>
+
+      <!-- Claim Status Filters -->
+      <div class="filter-pills-row">
+        @for (st of ['ALL', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED']; track st) {
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="claimStatusFilter() === st"
+            (click)="claimStatusFilter.set(st)"
+          >
+            {{ st === 'ALL' ? 'All Claims' : (st | titlecase) }}
+          </button>
+        }
+      </div>
+
+      <!-- Damage Claims Grid -->
+      <div class="claims-grid">
+        @for (cl of filteredClaims(); track cl.id) {
+          <article class="claim-card" (click)="viewClaimDetails(cl)">
+            <div class="claim-card-header">
+              <div class="claim-id-group">
+                <span class="claim-id-tag">Claim #{{ cl.id }}</span>
+                <span class="booking-link-tag">Booking #{{ cl.bookingId }}</span>
+              </div>
+              <span [class]="claimStatusBadgeClass(cl.status)">{{ cl.status }}</span>
+            </div>
+
+            <!-- Amount Overview -->
+            <div class="claim-amounts-row">
+              <div class="amount-pill">
+                <span class="amount-label">Claimed</span>
+                <span class="amount-val">${{ cl.claimedAmount || 0 }}</span>
+              </div>
+              @if (cl.status === 'APPROVED' && cl.approvedAmount) {
+                <div class="amount-pill approved-pill">
+                  <span class="amount-label">Approved & Credited</span>
+                  <span class="amount-val green">${{ cl.approvedAmount }}</span>
+                </div>
+              }
+            </div>
+
+            <p class="claim-desc-snippet">{{ cl.description }}</p>
+
+            <!-- Evidence Photo Thumbnails -->
+            @if (cl.evidenceFileUrls && cl.evidenceFileUrls.length > 0) {
+              <div class="evidence-strip">
+                <span class="evidence-count">{{ cl.evidenceFileUrls.length }} Photo Evidence:</span>
+                <div class="evidence-thumbnails">
+                  @for (url of cl.evidenceFileUrls; track url) {
+                    <img
+                      [src]="url"
+                      alt="Damage evidence"
+                      class="evidence-thumb"
+                      (click)="$event.stopPropagation(); openLightbox(url)"
+                    />
+                  }
+                </div>
+              </div>
+            }
+
+            @if (cl.decisionNotes) {
+              <div class="decision-notes-box">
+                <strong>Inspector Notes:</strong> {{ cl.decisionNotes }}
+              </div>
+            }
+
+            <div class="claim-card-footer">
+              <span class="filed-date">Submitted {{ cl.createdAt | date: 'mediumDate' }}</span>
+              <button type="button" class="btn-view-ticket">
+                View Claim Status →
+              </button>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-state-box">
+            <span class="empty-icon">🛡️</span>
+            <h3>No Damage Claims</h3>
+            <p>You have no damage claims on file. All your vehicle services have been safe and sound!</p>
+            <button type="button" class="gcw-btn gcw-btn-primary" (click)="openClaimModal()">
+              Submit Damage Claim
+            </button>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- ============================================================ -->
+  <!-- MODALS                                                       -->
+  <!-- ============================================================ -->
+
+  <!-- 1. CREATE SUPPORT TICKET MODAL -->
+  @if (showTicketModal()) {
+    <div class="modal-overlay" (click)="closeTicketModal()">
+      <div class="modal-card animate-fade-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>Open a Support Ticket</h3>
+            <p>Our support team will assist you within our SLA window.</p>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeTicketModal()">✕</button>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="gcw-alert gcw-alert-danger">
+            <span class="alert-icon">⚠️</span>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <form [formGroup]="ticketForm" (ngSubmit)="submitTicket()" novalidate class="modal-form">
+          <div class="gcw-field">
+            <label class="gcw-label" for="ticketBookingId">Associated Booking (Optional)</label>
+            <select id="ticketBookingId" class="gcw-select" formControlName="bookingId">
+              <option [ngValue]="null">General Inquiry (Not related to a specific booking)</option>
+              @for (b of bookings(); track b.id) {
+                <option [ngValue]="b.id">Order #{{ b.id }} — {{ b.packageName || 'Eco Wash' }} ({{ b.status }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-row-2">
+            <div class="gcw-field">
+              <label class="gcw-label" for="ticketCategory">Category <span class="required">*</span></label>
+              <select id="ticketCategory" class="gcw-select" formControlName="category">
+                <option value="GENERAL">General Support</option>
+                <option value="SERVICE_ISSUE">Service Issue</option>
+                <option value="VEHICLE_ISSUE">Vehicle Concern</option>
+                <option value="EQUIPMENT_ISSUE">Equipment / Supplies</option>
+              </select>
+            </div>
+
+            <div class="gcw-field">
+              <label class="gcw-label" for="ticketPriority">Priority <span class="required">*</span></label>
+              <select id="ticketPriority" class="gcw-select" formControlName="priority">
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="URGENT">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="ticketSubject">Subject <span class="required">*</span></label>
+            <input
+              id="ticketSubject"
+              type="text"
+              class="gcw-input"
+              formControlName="subject"
+              placeholder="Brief summary of your inquiry..."
+              maxlength="150"
+            />
+            @if (ticketForm.controls.subject.touched && ticketForm.controls.subject.invalid) {
+              <span class="field-error">Subject must be between 4 and 150 characters.</span>
+            }
+          </div>
+
+          <div class="gcw-field">
+            <div class="label-with-counter">
+              <label class="gcw-label" for="ticketDescription">Description <span class="required">*</span></label>
+              <span class="char-counter">{{ ticketForm.controls.description.value.length }} / 2000</span>
+            </div>
+            <textarea
+              id="ticketDescription"
+              class="gcw-textarea"
+              rows="4"
+              formControlName="description"
+              maxlength="2000"
+              placeholder="Provide complete details so our team can resolve your inquiry faster..."
+            ></textarea>
+            @if (ticketForm.controls.description.touched && ticketForm.controls.description.invalid) {
+              <span class="field-error">Description must be at least 10 characters.</span>
+            }
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeTicketModal()" [disabled]="submitting()">
+              Cancel
+            </button>
+            <button type="submit" class="gcw-btn gcw-btn-primary" [disabled]="submitting() || ticketForm.invalid">
+              @if (submitting()) {
+                <span class="spinner-inline"></span>
+                <span>Creating...</span>
+              } @else {
+                <span>Submit Ticket</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- 2. CREATE COMPLAINT MODAL (Strictly uses actual backend DTO: { bookingId, description }) -->
+  @if (showComplaintModal()) {
+    <div class="modal-overlay" (click)="closeComplaintModal()">
+      <div class="modal-card animate-fade-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>File a Service Complaint</h3>
+            <p>Report unsatisfactory wash quality or washer behavior for QA resolution.</p>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeComplaintModal()">✕</button>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="gcw-alert gcw-alert-danger">
+            <span class="alert-icon">⚠️</span>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <form [formGroup]="complaintForm" (ngSubmit)="submitComplaint()" novalidate class="modal-form">
+          <div class="gcw-field">
+            <label class="gcw-label" for="complaintBookingId">
+              Select Completed Booking <span class="required">*</span>
+            </label>
+            <select id="complaintBookingId" class="gcw-select" formControlName="bookingId">
+              <option [ngValue]="null" disabled>Select a booking to complain about</option>
+              @for (b of bookings(); track b.id) {
+                <option [ngValue]="b.id">
+                  Order #{{ b.id }} — {{ b.packageName || 'Eco Wash' }} ({{ b.status }})
+                </option>
+              }
+            </select>
+            @if (complaintForm.controls.bookingId.touched && complaintForm.controls.bookingId.invalid) {
+              <span class="field-error">Please select a valid booking.</span>
+            }
+          </div>
+
+          <div class="gcw-field">
+            <div class="label-with-counter">
+              <label class="gcw-label" for="complaintDescription">
+                Complaint Details <span class="required">*</span>
+              </label>
+              <span class="char-counter">{{ complaintForm.controls.description.value.length }} / 2000</span>
+            </div>
+            <textarea
+              id="complaintDescription"
+              class="gcw-textarea"
+              rows="5"
+              formControlName="description"
+              maxlength="2000"
+              placeholder="Describe the quality issue in detail (e.g. unwashed rims, late arrival, missed interior spots). Our QA team investigates all complaints..."
+            ></textarea>
+            @if (complaintForm.controls.description.touched && complaintForm.controls.description.invalid) {
+              <span class="field-error">Please provide at least 10 characters describing the issue.</span>
+            }
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeComplaintModal()" [disabled]="submitting()">
+              Cancel
+            </button>
+            <button type="submit" class="gcw-btn gcw-btn-primary" [disabled]="submitting() || complaintForm.invalid">
+              @if (submitting()) {
+                <span class="spinner-inline"></span>
+                <span>Submitting...</span>
+              } @else {
+                <span>Submit Complaint</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- 3. CREATE DAMAGE CLAIM MODAL (Backend DTO: { bookingId, description, claimedAmount, evidenceFileUrls }) -->
+  @if (showClaimModal()) {
+    <div class="modal-overlay" (click)="closeClaimModal()">
+      <div class="modal-card animate-fade-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>File a Vehicle Damage Claim</h3>
+            <p>Submit claim details and upload photo evidence for inspection.</p>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeClaimModal()">✕</button>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="gcw-alert gcw-alert-danger">
+            <span class="alert-icon">⚠️</span>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <form [formGroup]="claimForm" (ngSubmit)="submitDamageClaim()" novalidate class="modal-form">
+          <div class="gcw-field">
+            <label class="gcw-label" for="claimBookingId">
+              Associated Booking <span class="required">*</span>
+            </label>
+            <select id="claimBookingId" class="gcw-select" formControlName="bookingId">
+              <option [ngValue]="null" disabled>Select the booking during which damage occurred</option>
+              @for (b of bookings(); track b.id) {
+                <option [ngValue]="b.id">
+                  Order #{{ b.id }} — {{ b.packageName || 'Eco Wash' }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="claimedAmount">
+              Claimed Amount ($) <span class="required">*</span>
+            </label>
+            <input
+              id="claimedAmount"
+              type="number"
+              class="gcw-input"
+              formControlName="claimedAmount"
+              min="1"
+              placeholder="Estimated repair amount in USD (e.g. 250)"
+            />
+            @if (claimForm.controls.claimedAmount.touched && claimForm.controls.claimedAmount.invalid) {
+              <span class="field-error">Please specify a positive claimed amount.</span>
+            }
+          </div>
+
+          <div class="gcw-field">
+            <div class="label-with-counter">
+              <label class="gcw-label" for="claimDescription">
+                Damage Description <span class="required">*</span>
+              </label>
+              <span class="char-counter">{{ claimForm.controls.description.value.length }} / 2000</span>
+            </div>
+            <textarea
+              id="claimDescription"
+              class="gcw-textarea"
+              rows="4"
+              formControlName="description"
+              maxlength="2000"
+              placeholder="Describe where and how the damage occurred (e.g., scratch on left rear door, damaged side mirror)..."
+            ></textarea>
+            @if (claimForm.controls.description.touched && claimForm.controls.description.invalid) {
+              <span class="field-error">Please provide a descriptive account of the damage.</span>
+            }
+          </div>
+
+          <!-- Evidence Photos (Supported by Backend evidenceFileUrls) -->
+          <div class="claim-evidence-section">
+            <div class="evidence-header">
+              <label class="gcw-label">Photo Evidence (Max 8 photos)</label>
+              <span class="photos-count-badge">{{ claimEvidenceUrls().length }} / 8</span>
+            </div>
+
+            <div class="photo-inputs-row">
+              <label class="btn-file-upload">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  (change)="onClaimFileSelected($event)"
+                  [disabled]="claimEvidenceUrls().length >= 8"
+                />
+                <span>📷 Upload Photos from Device</span>
+              </label>
+
+              <div class="url-input-group">
+                <input
+                  #claimUrlInput
+                  type="url"
+                  class="gcw-input"
+                  placeholder="Or paste image URL"
+                  (keydown.enter)="$event.preventDefault(); addClaimEvidenceUrl(claimUrlInput)"
+                  [disabled]="claimEvidenceUrls().length >= 8"
+                />
+                <button
+                  type="button"
+                  class="gcw-btn gcw-btn-secondary"
+                  (click)="addClaimEvidenceUrl(claimUrlInput)"
+                  [disabled]="claimEvidenceUrls().length >= 8"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            @if (claimEvidenceUrls().length > 0) {
+              <div class="evidence-preview-grid">
+                @for (url of claimEvidenceUrls(); track url; let i = $index) {
+                  <div class="evidence-preview-item">
+                    <img [src]="url" alt="Claim evidence" (click)="openLightbox(url)" />
+                    <button type="button" class="btn-remove-photo" (click)="removeClaimPhoto(i)">✕</button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeClaimModal()" [disabled]="submitting()">
+              Cancel
+            </button>
+            <button type="submit" class="gcw-btn gcw-btn-primary" [disabled]="submitting() || claimForm.invalid">
+              @if (submitting()) {
+                <span class="spinner-inline"></span>
+                <span>Submitting Claim...</span>
+              } @else {
+                <span>Submit Damage Claim</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- 4. TICKET DETAILS MODAL -->
+  @if (selectedTicket(); as t) {
+    <div class="modal-overlay" (click)="closeTicketDetails()">
+      <div class="modal-card modal-detail-card animate-fade-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <div class="ticket-id-tag">Ticket #{{ t.id }}</div>
+            <h3 class="modal-detail-title">{{ t.subject }}</h3>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeTicketDetails()">✕</button>
+        </div>
+
+        <div class="detail-body">
+          <div class="detail-grid-meta">
+            <div>
+              <span class="detail-meta-label">Status</span>
+              <div><app-status-badge [status]="t.status" /></div>
+            </div>
+            <div>
+              <span class="detail-meta-label">Priority</span>
+              <div><span [class]="priorityBadgeClass(t.priority)">{{ t.priority || 'MEDIUM' }}</span></div>
+            </div>
+            <div>
+              <span class="detail-meta-label">Category</span>
+              <div class="detail-meta-value">{{ t.category || 'GENERAL' }}</div>
+            </div>
+            <div>
+              <span class="detail-meta-label">Opened At</span>
+              <div class="detail-meta-value">{{ t.createdAt | date: 'medium' }}</div>
+            </div>
+            @if (t.bookingId) {
+              <div>
+                <span class="detail-meta-label">Booking</span>
+                <div class="detail-meta-value">Order #{{ t.bookingId }}</div>
+              </div>
+            }
+            @if (t.slaDueAt) {
+              <div>
+                <span class="detail-meta-label">SLA Due</span>
+                <div class="detail-meta-value">{{ t.slaDueAt | date: 'medium' }}</div>
+              </div>
+            }
+          </div>
+
+          <div class="detail-section">
+            <h4 class="detail-heading">Ticket Description</h4>
+            <div class="detail-text-box">{{ t.description }}</div>
+          </div>
+
+          @if (t.resolution) {
+            <div class="detail-section resolution-highlight">
+              <h4 class="detail-heading">Resolution from Support Team</h4>
+              <div class="detail-text-box">{{ t.resolution }}</div>
+              @if (t.resolvedAt) {
+                <span class="resolved-timestamp">Resolved on {{ t.resolvedAt | date: 'medium' }}</span>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeTicketDetails()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 5. COMPLAINT DETAILS MODAL -->
+  @if (selectedComplaint(); as c) {
+    <div class="modal-overlay" (click)="closeComplaintDetails()">
+      <div class="modal-card modal-detail-card animate-fade-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <div class="complaint-id-tag">Complaint #{{ c.id }}</div>
+            <h3 class="modal-detail-title">Complaint for Booking #{{ c.bookingId }}</h3>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeComplaintDetails()">✕</button>
+        </div>
+
+        <div class="detail-body">
+          <div class="detail-grid-meta">
+            <div>
+              <span class="detail-meta-label">Status</span>
+              <div><span [class]="complaintStatusBadgeClass(c.status)">{{ c.status }}</span></div>
+            </div>
+            <div>
+              <span class="detail-meta-label">Decision</span>
+              <div class="detail-meta-value">
+                {{ c.resolutionDecision || 'Pending QA Review' }}
+              </div>
+            </div>
+            @if (c.creditAmount) {
+              <div>
+                <span class="detail-meta-label">Credit Amount</span>
+                <div class="detail-meta-value green">${{ c.creditAmount }}</div>
+              </div>
+            }
+            <div>
+              <span class="detail-meta-label">Filed On</span>
+              <div class="detail-meta-value">{{ c.createdAt | date: 'medium' }}</div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4 class="detail-heading">Customer Complaint Statement</h4>
+            <div class="detail-text-box">{{ c.description }}</div>
+          </div>
+
+          @if (c.washerResponse) {
+            <div class="detail-section washer-response-highlight">
+              <h4 class="detail-heading">Washer's Response</h4>
+              <div class="detail-text-box">"{{ c.washerResponse }}"</div>
+              @if (c.washerRespondedAt) {
+                <span class="resolved-timestamp">Responded on {{ c.washerRespondedAt | date: 'medium' }}</span>
+              }
+            </div>
+          }
+
+          @if (c.resolutionNotes) {
+            <div class="detail-section resolution-highlight">
+              <h4 class="detail-heading">QA Resolution Notes</h4>
+              <div class="detail-text-box">{{ c.resolutionNotes }}</div>
+              @if (c.resolvedAt) {
+                <span class="resolved-timestamp">Resolved on {{ c.resolvedAt | date: 'medium' }}</span>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeComplaintDetails()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 6. DAMAGE CLAIM DETAILS MODAL -->
+  @if (selectedClaim(); as cl) {
+    <div class="modal-overlay" (click)="closeClaimDetails()">
+      <div class="modal-card modal-detail-card animate-fade-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <div class="claim-id-tag">Damage Claim #{{ cl.id }}</div>
+            <h3 class="modal-detail-title">Claim for Booking #{{ cl.bookingId }}</h3>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeClaimDetails()">✕</button>
+        </div>
+
+        <div class="detail-body">
+          <div class="detail-grid-meta">
+            <div>
+              <span class="detail-meta-label">Claim Status</span>
+              <div><span [class]="claimStatusBadgeClass(cl.status)">{{ cl.status }}</span></div>
+            </div>
+            <div>
+              <span class="detail-meta-label">Claimed Amount</span>
+              <div class="detail-meta-value">${{ cl.claimedAmount }}</div>
+            </div>
+            @if (cl.approvedAmount) {
+              <div>
+                <span class="detail-meta-label">Approved Amount</span>
+                <div class="detail-meta-value green">${{ cl.approvedAmount }}</div>
+              </div>
+            }
+            <div>
+              <span class="detail-meta-label">Submitted On</span>
+              <div class="detail-meta-value">{{ cl.createdAt | date: 'medium' }}</div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4 class="detail-heading">Incident Description</h4>
+            <div class="detail-text-box">{{ cl.description }}</div>
+          </div>
+
+          @if (cl.evidenceFileUrls && cl.evidenceFileUrls.length > 0) {
+            <div class="detail-section">
+              <h4 class="detail-heading">Photo Evidence ({{ cl.evidenceFileUrls.length }})</h4>
+              <div class="evidence-preview-grid">
+                @for (url of cl.evidenceFileUrls; track url) {
+                  <div class="evidence-preview-item">
+                    <img [src]="url" alt="Damage photo" (click)="openLightbox(url)" />
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (cl.decisionNotes) {
+            <div class="detail-section resolution-highlight">
+              <h4 class="detail-heading">Inspection & Decision Notes</h4>
+              <div class="detail-text-box">{{ cl.decisionNotes }}</div>
+              @if (cl.resolvedAt) {
+                <span class="resolved-timestamp">Decided on {{ cl.resolvedAt | date: 'medium' }}</span>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeClaimDetails()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- 7. LIGHTBOX IMAGE MODAL -->
+  @if (previewImageUrl()) {
+    <div class="lightbox-overlay" (click)="closeLightbox()">
+      <div class="lightbox-modal" (click)="$event.stopPropagation()">
+        <button type="button" class="btn-close-lightbox" (click)="closeLightbox()">✕</button>
+        <img [src]="previewImageUrl()" alt="Enlarged evidence photo" />
+      </div>
+    </div>
+  }
+</div>
