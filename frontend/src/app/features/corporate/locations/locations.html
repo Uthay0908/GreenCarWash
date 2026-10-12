@@ -1,0 +1,205 @@
+<div class="corporate-locations-view">
+  <div class="gcw-page-header">
+    <div>
+      <h1 class="page-title">Servicing Locations ({{ locations().length }})</h1>
+      <p class="page-sub">Manage fleet depots, logistics yards, and corporate parking facilities where mobile washers service your vehicles.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="gcw-btn gcw-btn-primary" (click)="openAddModal()">
+        + Add Servicing Hub
+      </button>
+    </div>
+  </div>
+
+  @if (toastMessage(); as t) {
+    <div class="alert-strip" [class.alert-success]="t.type === 'success'" [class.alert-danger]="t.type === 'error'">
+      <span>{{ t.type === 'success' ? '✓' : '⚠️' }} {{ t.text }}</span>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="gcw-card state-card">
+      <div class="spinner"></div>
+      <p>Loading servicing hubs from corporate backend…</p>
+    </div>
+  } @else if (error()) {
+    <div class="gcw-card state-card error-card">
+      <div class="state-icon">⚠️</div>
+      <h3>Failed to load locations</h3>
+      <p>{{ error() }}</p>
+      <button type="button" class="gcw-btn gcw-btn-secondary" (click)="loadData()">Retry</button>
+    </div>
+  } @else if (locations().length === 0) {
+    <div class="gcw-card empty-card">
+      <div class="empty-icon">📍</div>
+      <h3>No Servicing Hubs Configured</h3>
+      <p>Add your corporate parking yard or office address so mobile wash teams know where to dispatch.</p>
+      <button type="button" class="gcw-btn gcw-btn-primary" (click)="openAddModal()">
+        + Add First Location
+      </button>
+    </div>
+  } @else {
+    <div class="locations-grid">
+      @for (loc of locations(); track loc.id) {
+        <div class="location-card gcw-card">
+          <div class="loc-card-header">
+            <div class="loc-badge">
+              <span class="loc-icon">🏢</span>
+              <strong class="loc-title">{{ loc.label || 'Corporate Hub' }}</strong>
+            </div>
+            <span class="loc-id-tag">#{{ loc.id }}</span>
+          </div>
+
+          <div class="loc-card-body">
+            <p class="loc-street"><strong>{{ loc.line1 }}</strong></p>
+            @if (loc.line2) {
+              <p class="loc-street2">{{ loc.line2 }}</p>
+            }
+            <p class="loc-city">{{ loc.city }}, {{ loc.state }} {{ loc.postalCode }}</p>
+            <p class="loc-country">{{ loc.country || 'India' }}</p>
+
+            @if (loc.latitude && loc.longitude) {
+              <div class="coords-pill">
+                <span>📍 GPS: {{ loc.latitude | number: '1.4-4' }}, {{ loc.longitude | number: '1.4-4' }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="loc-card-footer">
+            <span class="created-at">Added {{ loc.createdAt | date: 'mediumDate' }}</span>
+            <span class="active-badge">Active Yard</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Add Location Modal -->
+  @if (showModal()) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-dialog gcw-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Add Servicing Location / Hub</h3>
+          <button type="button" class="close-btn" (click)="closeModal()">✕</button>
+        </div>
+
+        <form (ngSubmit)="submitAddLocation()" class="modal-form">
+          <div class="gcw-field">
+            <label class="gcw-label">Hub / Yard Label</label>
+            <input
+              type="text"
+              class="gcw-input"
+              [(ngModel)]="label"
+              name="label"
+              placeholder="e.g. Headquarters Basement Parking / OMR Depot"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label">Address Line 1 <span class="required">*</span></label>
+            <input
+              type="text"
+              class="gcw-input"
+              [(ngModel)]="line1"
+              name="line1"
+              required
+              placeholder="e.g. 100 Express Highway, Industrial Estate"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label">Address Line 2</label>
+            <input
+              type="text"
+              class="gcw-input"
+              [(ngModel)]="line2"
+              name="line2"
+              placeholder="e.g. Block B, Bay 4"
+            />
+          </div>
+
+          <div class="form-row-2">
+            <div class="gcw-field">
+              <label class="gcw-label">City <span class="required">*</span></label>
+              <input
+                type="text"
+                class="gcw-input"
+                [(ngModel)]="city"
+                name="city"
+                required
+                placeholder="e.g. Chennai"
+              />
+            </div>
+            <div class="gcw-field">
+              <label class="gcw-label">State</label>
+              <input
+                type="text"
+                class="gcw-input"
+                [(ngModel)]="state"
+                name="state"
+                placeholder="e.g. Tamil Nadu"
+              />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="gcw-field">
+              <label class="gcw-label">Postal / ZIP Code</label>
+              <input
+                type="text"
+                class="gcw-input"
+                [(ngModel)]="postalCode"
+                name="postalCode"
+                placeholder="e.g. 600001"
+              />
+            </div>
+            <div class="gcw-field">
+              <label class="gcw-label">Country</label>
+              <input
+                type="text"
+                class="gcw-input"
+                [(ngModel)]="country"
+                name="country"
+                placeholder="India"
+              />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="gcw-field">
+              <label class="gcw-label">Latitude</label>
+              <input
+                type="number"
+                step="any"
+                class="gcw-input"
+                [(ngModel)]="latitude"
+                name="latitude"
+                placeholder="e.g. 13.0827"
+              />
+            </div>
+            <div class="gcw-field">
+              <label class="gcw-label">Longitude</label>
+              <input
+                type="number"
+                step="any"
+                class="gcw-input"
+                [(ngModel)]="longitude"
+                name="longitude"
+                placeholder="e.g. 80.2707"
+              />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="gcw-btn gcw-btn-primary" [disabled]="submitting()">
+              {{ submitting() ? 'Saving Hub…' : 'Save Servicing Hub' }}
+            </button>
+            <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeModal()" [disabled]="submitting()">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

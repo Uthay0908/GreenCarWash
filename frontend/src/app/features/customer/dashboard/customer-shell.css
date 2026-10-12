@@ -1,0 +1,34 @@
+.gcw-customer-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+  color: #0f172a;
+  position: relative;
+}
+
+.gcw-customer-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.gcw-customer-content {
+  flex: 1;
+  padding: 1.75rem 2rem;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .gcw-customer-layout {
+    flex-direction: column;
+  }
+
+  .gcw-customer-content {
+    padding: 1rem 1rem 6rem 1rem; /* Space for fixed mobile bottom nav */
+  }
+}

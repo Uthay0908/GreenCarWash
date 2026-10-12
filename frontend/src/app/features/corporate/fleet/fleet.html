@@ -1,0 +1,315 @@
+<div class="corporate-fleet-view">
+  <div class="gcw-page-header">
+    <div>
+      <h1 class="page-title">Corporate Fleet Vehicles ({{ fleetVehicles().length }})</h1>
+      <p class="page-sub">Manage enterprise vehicles registered for bulk corporate washing, automated schedules, and priority servicing.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="gcw-btn gcw-btn-primary" (click)="openAddVehicleModal()">
+        + Add Vehicle to Fleet
+      </button>
+    </div>
+  </div>
+
+  @if (toastMessage(); as t) {
+    <div class="alert-strip" [class.alert-success]="t.type === 'success'" [class.alert-danger]="t.type === 'error'">
+      <span>{{ t.type === 'success' ? '✓' : '⚠️' }} {{ t.text }}</span>
+    </div>
+  }
+
+  <!-- Search & Filter Controls -->
+  <div class="fleet-controls-row">
+    <div class="fleet-search-wrap">
+      <span class="search-ico">🔍</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search by license plate, make, model, or label…"
+        [(ngModel)]="searchQuery"
+      />
+    </div>
+
+    <div class="status-filter-pills">
+      <button
+        type="button"
+        class="f-pill"
+        [class.active]="fleetFilter() === 'ALL'"
+        (click)="setFleetFilter('ALL')">
+        All ({{ enrichedFleetVehicles().length }})
+      </button>
+      <button
+        type="button"
+        class="f-pill"
+        [class.active]="fleetFilter() === 'SEDAN'"
+        (click)="setFleetFilter('SEDAN')">
+        Sedan
+      </button>
+      <button
+        type="button"
+        class="f-pill"
+        [class.active]="fleetFilter() === 'SUV'"
+        (click)="setFleetFilter('SUV')">
+        SUV
+      </button>
+      <button
+        type="button"
+        class="f-pill"
+        [class.active]="fleetFilter() === 'HATCHBACK'"
+        (click)="setFleetFilter('HATCHBACK')">
+        Hatchback
+      </button>
+    </div>
+  </div>
+
+  <!-- State Rendering -->
+  @if (loading()) {
+    <div class="gcw-card state-card">
+      <div class="spinner"></div>
+      <p>Loading corporate fleet vehicles from backend…</p>
+    </div>
+  } @else if (error()) {
+    <div class="gcw-card state-card error-card">
+      <div class="state-icon">⚠️</div>
+      <h3>Failed to load fleet</h3>
+      <p>{{ error() }}</p>
+      <button type="button" class="gcw-btn gcw-btn-secondary" (click)="loadData()">Retry</button>
+    </div>
+  } @else if (fleetVehicles().length === 0) {
+    <div class="gcw-card empty-card">
+      <div class="empty-icon">🚗</div>
+      <h3>No Vehicles in Fleet Yet</h3>
+      <p>Enroll your company vehicles to start booking batch mobile washes and recurring maintenance schedules.</p>
+      <button type="button" class="gcw-btn gcw-btn-primary" (click)="openAddVehicleModal()">
+        + Add First Vehicle
+      </button>
+    </div>
+  } @else {
+    <!-- Real Backend Fleet Cards Grid -->
+    <div class="fleet-cards-grid">
+      @for (v of filteredVehicles(); track v.id) {
+        <div class="fleet-veh-card gcw-card">
+          <div class="veh-card-top">
+            <div class="veh-icon-box">
+              <span class="car-type-ico">🚗</span>
+            </div>
+            <div class="veh-plate-wrap">
+              <span class="veh-plate">{{ v.licensePlate }}</span>
+              <span class="type-badge">{{ v.vehicleType }}</span>
+            </div>
+          </div>
+
+          <div class="veh-card-middle">
+            <h3 class="veh-make-model">{{ v.make }} {{ v.model }}</h3>
+            @if (v.label) {
+              <div class="label-badge">
+                <span>🏷️ {{ v.label }}</span>
+              </div>
+            }
+            <div class="veh-details-meta">
+              <span>Color: <strong>{{ v.color || 'White' }}</strong></span>
+              @if (v.year) {
+                <span>Year: <strong>{{ v.year }}</strong></span>
+              }
+              <span>Vehicle Ref: <strong>#{{ v.vehicleId }}</strong></span>
+            </div>
+          </div>
+
+          <div class="veh-card-bottom">
+            <span class="enrolled-date">Enrolled {{ v.createdAt | date: 'mediumDate' }}</span>
+            <button
+              type="button"
+              class="btn-remove-veh"
+              (click)="requestRemoveVehicle(v.vehicleId)"
+              title="Remove vehicle from corporate fleet">
+              Remove
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Add Vehicle Modal -->
+  @if (showAddVehicleModal()) {
+    <div class="modal-backdrop" (click)="closeAddVehicleModal()">
+      <div class="modal-dialog gcw-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Add Vehicle to Corporate Fleet</h3>
+          <button type="button" class="close-btn" (click)="closeAddVehicleModal()">✕</button>
+        </div>
+
+        <!-- Mode Toggle Tabs -->
+        <div class="modal-mode-tabs">
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="addMode() === 'NEW'"
+            (click)="addMode.set('NEW')">
+            Register New Vehicle
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="addMode() === 'EXISTING'"
+            (click)="addMode.set('EXISTING')">
+            Link Existing Vehicle {{ unassignedVehicles().length > 0 ? '(' + unassignedVehicles().length + ')' : '' }}
+          </button>
+        </div>
+
+        <form (ngSubmit)="submitAddVehicle()" class="modal-form">
+          @if (addMode() === 'NEW') {
+            <div class="form-row-2">
+              <div class="gcw-field">
+                <label class="gcw-label">Make / Brand <span class="required">*</span></label>
+                <input
+                  type="text"
+                  class="gcw-input"
+                  [(ngModel)]="newMake"
+                  name="newMake"
+                  required
+                  placeholder="e.g. Toyota / Hyundai / Tata"
+                />
+              </div>
+              <div class="gcw-field">
+                <label class="gcw-label">Model <span class="required">*</span></label>
+                <input
+                  type="text"
+                  class="gcw-input"
+                  [(ngModel)]="newModel"
+                  name="newModel"
+                  required
+                  placeholder="e.g. Innova / Creta / Nexon"
+                />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="gcw-field">
+                <label class="gcw-label">License Plate <span class="required">*</span></label>
+                <input
+                  type="text"
+                  class="gcw-input"
+                  [(ngModel)]="newLicensePlate"
+                  name="newLicensePlate"
+                  required
+                  placeholder="e.g. TN 09 AB 1234"
+                />
+              </div>
+              <div class="gcw-field">
+                <label class="gcw-label">Vehicle Type</label>
+                <select class="gcw-select" [(ngModel)]="newVehicleType" name="newVehicleType">
+                  <option value="SEDAN">Sedan</option>
+                  <option value="SUV">SUV</option>
+                  <option value="HATCHBACK">Hatchback</option>
+                  <option value="MUV">MUV / Van</option>
+                  <option value="LUXURY">Luxury</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="gcw-field">
+                <label class="gcw-label">Color</label>
+                <input
+                  type="text"
+                  class="gcw-input"
+                  [(ngModel)]="newColor"
+                  name="newColor"
+                  placeholder="e.g. White / Black / Silver"
+                />
+              </div>
+              <div class="gcw-field">
+                <label class="gcw-label">Model Year</label>
+                <input
+                  type="number"
+                  class="gcw-input"
+                  [(ngModel)]="newYear"
+                  name="newYear"
+                  placeholder="2024"
+                />
+              </div>
+            </div>
+          } @else {
+            @if (unassignedVehicles().length > 0) {
+              <div class="gcw-field">
+                <label class="gcw-label">Select Unassigned Vehicle</label>
+                <select class="gcw-select" [(ngModel)]="selectedVehicleId" name="selectedVehicleId">
+                  @for (veh of unassignedVehicles(); track veh.id) {
+                    <option [ngValue]="veh.id">
+                      {{ veh.make }} {{ veh.model }} ({{ veh.licensePlate }}) - {{ veh.vehicleType }}
+                    </option>
+                  }
+                </select>
+              </div>
+              <div class="field-divider"><span>OR ENTER VEHICLE ID</span></div>
+              <div class="gcw-field">
+                <label class="gcw-label">Vehicle Reference ID</label>
+                <input
+                  type="number"
+                  class="gcw-input"
+                  [(ngModel)]="manualVehicleId"
+                  name="manualVehicleId"
+                  placeholder="e.g. 5"
+                />
+              </div>
+            } @else {
+              <div class="info-alert-box">
+                <p>All registered vehicles under this user profile are currently enrolled in your fleet.</p>
+                <p class="sub-tip">You can link another company car by entering its Vehicle Reference ID below:</p>
+              </div>
+              <div class="gcw-field">
+                <label class="gcw-label">Vehicle Reference ID <span class="required">*</span></label>
+                <input
+                  type="number"
+                  class="gcw-input"
+                  [(ngModel)]="manualVehicleId"
+                  name="manualVehicleId"
+                  placeholder="e.g. 1"
+                  required
+                />
+              </div>
+            }
+          }
+
+          <div class="gcw-field">
+            <label class="gcw-label">Fleet Label / Operating Unit (Optional)</label>
+            <input
+              type="text"
+              class="gcw-input"
+              [(ngModel)]="fleetVehicleLabel"
+              name="fleetVehicleLabel"
+              placeholder="e.g. Sales Team #1 / Executive Car / Shuttle 2"
+            />
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="gcw-btn gcw-btn-primary" [disabled]="submittingVehicle()">
+              {{ submittingVehicle() ? 'Adding Vehicle…' : 'Add to Fleet' }}
+            </button>
+            <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeAddVehicleModal()" [disabled]="submittingVehicle()">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Confirm Remove Modal -->
+  @if (confirmRemoveVehicleId(); as vehId) {
+    <div class="modal-backdrop" (click)="cancelRemoveVehicle()">
+      <div class="modal-dialog gcw-card confirm-dialog" (click)="$event.stopPropagation()">
+        <h3>Remove Vehicle from Fleet?</h3>
+        <p>Are you sure you want to remove vehicle #{{ vehId }} from this corporate fleet roster?</p>
+        <div class="modal-actions">
+          <button type="button" class="gcw-btn gcw-btn-danger" (click)="confirmRemoveVehicle(vehId)">
+            Confirm Remove
+          </button>
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="cancelRemoveVehicle()">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

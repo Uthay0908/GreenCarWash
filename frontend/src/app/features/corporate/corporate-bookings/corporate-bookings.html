@@ -1,0 +1,621 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Fleet Bookings &amp; Schedules</h1>
+    <p>Manage on-demand multi-vehicle fleet washes and automated recurring wash schedules.</p>
+  </div>
+  <div class="header-actions">
+    @if (activeTab() === 'BULK') {
+      <button type="button" class="gcw-btn gcw-btn-primary" (click)="openBulkModal()">
+        + Create Fleet Booking
+      </button>
+    } @else {
+      <button type="button" class="gcw-btn gcw-btn-primary" (click)="openRecurringModal()">
+        + New Recurring Schedule
+      </button>
+    }
+  </div>
+</div>
+
+@if (toastMessage(); as t) {
+  <div class="gcw-card alert-card" [class.alert-success]="t.type === 'success'" [class.alert-danger]="t.type === 'error'">
+    <span class="alert-icon">{{ t.type === 'success' ? '✓' : '⚠️' }}</span>
+    <span>{{ t.text }}</span>
+  </div>
+}
+
+<!-- Tabs for Bulk vs Recurring -->
+<div class="gcw-tabs">
+  <button
+    type="button"
+    class="gcw-tab"
+    [class.active]="activeTab() === 'BULK'"
+    (click)="setTab('BULK')"
+  >
+    ✨ Bulk Fleet Washes ({{ fleetBookings().length }})
+  </button>
+  <button
+    type="button"
+    class="gcw-tab"
+    [class.active]="activeTab() === 'RECURRING'"
+    (click)="setTab('RECURRING')"
+  >
+    🔄 Recurring Wash Schedules ({{ recurringSchedules().length }})
+  </button>
+</div>
+
+@if (loading()) {
+  <div class="gcw-card loading-card">
+    <div class="spinner"></div>
+    <p>Loading fleet bookings and schedules…</p>
+  </div>
+} @else if (!organization()) {
+  <div class="gcw-card gcw-empty">
+    <p>Please register your corporate organization to manage fleet bookings.</p>
+    <a routerLink="/corporate/organization" class="gcw-btn gcw-btn-primary gcw-btn-sm">
+      Register Organization
+    </a>
+  </div>
+} @else {
+  <!-- Tab 1: Bulk Fleet Washes -->
+  @if (activeTab() === 'BULK') {
+    <div class="gcw-card">
+      <div class="table-top-bar">
+        <div class="filters-pills">
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="statusFilter() === 'ALL'"
+            (click)="setStatusFilter('ALL')"
+          >
+            All ({{ fleetBookings().length }})
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="statusFilter() === 'PENDING'"
+            (click)="setStatusFilter('PENDING')"
+          >
+            Pending
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="statusFilter() === 'EXECUTED'"
+            (click)="setStatusFilter('EXECUTED')"
+          >
+            Executed
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="statusFilter() === 'CANCELLED'"
+            (click)="setStatusFilter('CANCELLED')"
+          >
+            Cancelled
+          </button>
+        </div>
+      </div>
+
+      <div class="gcw-table-wrap">
+        <table class="gcw-table">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>Scheduled At</th>
+              <th>Location</th>
+              <th>Service Package</th>
+              <th>Vehicles</th>
+              <th>Status</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (b of filteredBookings(); track b.id) {
+              <tr>
+                <td><span class="code-badge">#{{ b.id }}</span></td>
+                <td>{{ b.scheduledAt | date: 'medium' }}</td>
+                <td>
+                  <span class="loc-tag">
+                    📍 {{ locationMap().get(b.locationId)?.label || ('Location #' + b.locationId) }}
+                  </span>
+                </td>
+                <td>
+                  <strong>{{ packageMap().get(b.packageId)?.name || ('Package #' + b.packageId) }}</strong>
+                </td>
+                <td>
+                  <span class="gcw-badge gcw-badge-neutral">
+                    {{ b.itemCount || b.addOnIds?.length || 1 }} vehicle(s)
+                  </span>
+                </td>
+                <td>
+                  <app-status-badge [status]="b.status" />
+                </td>
+                <td style="text-align: right;">
+                  <div class="actions-group">
+                    <button
+                      type="button"
+                      class="gcw-btn gcw-btn-secondary gcw-btn-sm"
+                      (click)="openBookingDetail(b.id)"
+                    >
+                      Details
+                    </button>
+
+                    @if (b.status === 'PENDING') {
+                      <button
+                        type="button"
+                        class="gcw-btn gcw-btn-primary gcw-btn-sm"
+                        (click)="executeBooking(b.id)"
+                      >
+                        Execute
+                      </button>
+
+                      @if (confirmCancelBookingId() === b.id) {
+                        <div class="confirm-inline">
+                          <button
+                            type="button"
+                            class="gcw-btn gcw-btn-danger gcw-btn-sm"
+                            (click)="confirmCancelBooking(b.id)"
+                          >
+                            Confirm Cancel
+                          </button>
+                          <button
+                            type="button"
+                            class="gcw-btn gcw-btn-secondary gcw-btn-sm"
+                            (click)="cancelCancelBooking()"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      } @else {
+                        <button
+                          type="button"
+                          class="gcw-btn gcw-btn-danger gcw-btn-sm"
+                          (click)="requestCancelBooking(b.id)"
+                        >
+                          Cancel
+                        </button>
+                      }
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="gcw-empty">
+                  <div class="empty-wrap">
+                    <p>No fleet wash requests found matching the selected filter.</p>
+                    <button type="button" class="gcw-btn gcw-btn-primary gcw-btn-sm" (click)="openBulkModal()">
+                      + Create Fleet Wash Request
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Tab 2: Recurring Wash Schedules -->
+  @if (activeTab() === 'RECURRING') {
+    <div class="gcw-card">
+      <div class="table-top-bar">
+        <div>
+          <h3>Automated Fleet Wash Schedules</h3>
+          <p>Recurring wash rules generate scheduled bulk wash dispatches automatically.</p>
+        </div>
+      </div>
+
+      <div class="gcw-table-wrap">
+        <table class="gcw-table">
+          <thead>
+            <tr>
+              <th>Schedule ID</th>
+              <th>Frequency</th>
+              <th>Days &amp; Time</th>
+              <th>Location</th>
+              <th>Vehicles</th>
+              <th>Next Run</th>
+              <th>Status</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of recurringSchedules(); track s.id) {
+              <tr>
+                <td><span class="code-badge">#{{ s.id }}</span></td>
+                <td>
+                  <span class="gcw-badge gcw-badge-info">{{ s.frequency }}</span>
+                </td>
+                <td>
+                  <div class="schedule-timing">
+                    <strong>{{ formatDays(s.daysOfWeek) }}</strong>
+                    <span class="time-sub">{{ s.timeOfDay }}</span>
+                  </div>
+                </td>
+                <td>
+                  📍 {{ locationMap().get(s.locationId)?.label || ('Location #' + s.locationId) }}
+                </td>
+                <td>
+                  <span class="gcw-badge gcw-badge-neutral">{{ s.vehicleIds?.length || 0 }} vehicles</span>
+                </td>
+                <td>{{ s.nextRunAt ? (s.nextRunAt | date: 'short') : '—' }}</td>
+                <td>
+                  <span class="gcw-badge" [class.gcw-badge-success]="s.active" [class.gcw-badge-neutral]="!s.active">
+                    {{ s.active ? 'ACTIVE' : 'PAUSED' }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  <div class="actions-group">
+                    <button
+                      type="button"
+                      class="gcw-btn gcw-btn-secondary gcw-btn-sm"
+                      (click)="toggleScheduleActive(s)"
+                    >
+                      {{ s.active ? 'Pause' : 'Activate' }}
+                    </button>
+
+                    @if (confirmDeleteScheduleId() === s.id) {
+                      <div class="confirm-inline">
+                        <button
+                          type="button"
+                          class="gcw-btn gcw-btn-danger gcw-btn-sm"
+                          (click)="confirmDeleteSchedule(s.id)"
+                        >
+                          Confirm Delete
+                        </button>
+                        <button
+                          type="button"
+                          class="gcw-btn gcw-btn-secondary gcw-btn-sm"
+                          (click)="cancelDeleteSchedule()"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    } @else {
+                      <button
+                        type="button"
+                        class="gcw-btn gcw-btn-danger gcw-btn-sm"
+                        (click)="requestDeleteSchedule(s.id)"
+                      >
+                        Delete
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="gcw-empty">
+                  <div class="empty-wrap">
+                    <p>No automated recurring schedules set up yet.</p>
+                    <button type="button" class="gcw-btn gcw-btn-primary gcw-btn-sm" (click)="openRecurringModal()">
+                      + Set Up Recurring Wash Schedule
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+}
+
+<!-- Create Bulk Booking Modal -->
+@if (showBulkModal()) {
+  <div class="modal-overlay" (click)="closeBulkModal()">
+    <div class="gcw-card modal-container modal-wide" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Schedule Bulk Fleet Wash</h3>
+        <button type="button" class="close-btn" (click)="closeBulkModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        @if (fleetVehicles().length === 0) {
+          <div class="gcw-empty">
+            <p>You have no fleet vehicles registered to wash.</p>
+            <a routerLink="/corporate/fleet" class="gcw-btn gcw-btn-primary gcw-btn-sm" (click)="closeBulkModal()">
+              Add Fleet Vehicles First →
+            </a>
+          </div>
+        } @else if (locations().length === 0) {
+          <div class="gcw-empty">
+            <p>You have no operating locations registered.</p>
+            <a routerLink="/corporate/fleet" class="gcw-btn gcw-btn-primary gcw-btn-sm" (click)="closeBulkModal()">
+              Add Servicing Location First →
+            </a>
+          </div>
+        } @else {
+          <div class="form-grid-2">
+            <div class="gcw-field">
+              <label class="gcw-label" for="bulkLocation">Servicing Location / Yard <span class="required">*</span></label>
+              <select id="bulkLocation" class="gcw-select" [(ngModel)]="bulkLocationId">
+                @for (loc of locations(); track loc.id) {
+                  <option [ngValue]="loc.id">
+                    {{ loc.label || ('Location #' + loc.id) }} (Address #{{ loc.addressId }})
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="gcw-field">
+              <label class="gcw-label" for="bulkPackage">Wash Package <span class="required">*</span></label>
+              <select id="bulkPackage" class="gcw-select" [(ngModel)]="bulkPackageId">
+                @for (p of packages(); track p.id) {
+                  <option [ngValue]="p.id">
+                    {{ p.name }} (${{ p.price }})
+                  </option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="gcw-field">
+              <label class="gcw-label" for="bulkScheduledDate">Scheduled Date <span class="required">*</span></label>
+              <input id="bulkScheduledDate" type="date" class="gcw-input" [(ngModel)]="bulkScheduledDate" />
+            </div>
+
+            <div class="gcw-field">
+              <label class="gcw-label" for="bulkScheduledTime">Preferred Start Time <span class="required">*</span></label>
+              <input id="bulkScheduledTime" type="time" class="gcw-input" [(ngModel)]="bulkScheduledTime" />
+            </div>
+          </div>
+
+          <!-- Vehicle Multi-select -->
+          <div class="gcw-field">
+            <div class="selection-head">
+              <label class="gcw-label">
+                Select Fleet Vehicles ({{ bulkSelectedVehicleIds().length }}/{{ fleetVehicles().length }} Selected) <span class="required">*</span>
+              </label>
+              <button type="button" class="btn-text-action" (click)="toggleAllBulkVehicles()">
+                {{ bulkSelectedVehicleIds().length === fleetVehicles().length ? 'Deselect All' : 'Select All' }}
+              </button>
+            </div>
+
+            <div class="checkboxes-scroll-box">
+              @for (v of fleetVehicles(); track v.id) {
+                <label class="checkbox-card-item">
+                  <input
+                    type="checkbox"
+                    [checked]="bulkSelectedVehicleIds().includes(v.vehicleId)"
+                    (change)="toggleBulkVehSelection(v.vehicleId)"
+                  />
+                  <div class="chk-label">
+                    <strong>{{ getVehicleTitle(v) }}</strong>
+                    <span class="chk-sub">{{ getVehicleSubtitle(v) }}</span>
+                  </div>
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Optional Add-ons -->
+          @if (addOns().length > 0) {
+            <div class="gcw-field">
+              <label class="gcw-label">Optional Service Add-ons</label>
+              <div class="addons-grid">
+                @for (addon of addOns(); track addon.id) {
+                  <label class="addon-chip-item" [class.selected]="bulkSelectedAddOnIds().includes(addon.id)">
+                    <input
+                      type="checkbox"
+                      [checked]="bulkSelectedAddOnIds().includes(addon.id)"
+                      (change)="toggleBulkAddOn(addon.id)"
+                    />
+                    <span>{{ addon.name }} (+${{ addon.price }})</span>
+                  </label>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="gcw-btn gcw-btn-primary"
+              [disabled]="submittingBulk() || bulkSelectedVehicleIds().length === 0"
+              (click)="submitBulkBooking()"
+            >
+              {{ submittingBulk() ? 'Submitting & Executing…' : 'Schedule Bulk Wash' }}
+            </button>
+            <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeBulkModal()">
+              Cancel
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Create Recurring Schedule Modal -->
+@if (showRecurringModal()) {
+  <div class="modal-overlay" (click)="closeRecurringModal()">
+    <div class="gcw-card modal-container modal-wide" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Create Recurring Wash Schedule</h3>
+        <button type="button" class="close-btn" (click)="closeRecurringModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid-2">
+          <div class="gcw-field">
+            <label class="gcw-label" for="recLocation">Servicing Location / Yard <span class="required">*</span></label>
+            <select id="recLocation" class="gcw-select" [(ngModel)]="recLocationId">
+              @for (loc of locations(); track loc.id) {
+                <option [ngValue]="loc.id">
+                  {{ loc.label || ('Location #' + loc.id) }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="recPackage">Wash Package <span class="required">*</span></label>
+            <select id="recPackage" class="gcw-select" [(ngModel)]="recPackageId">
+              @for (p of packages(); track p.id) {
+                <option [ngValue]="p.id">
+                  {{ p.name }} (${{ p.price }})
+                </option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="gcw-field">
+            <label class="gcw-label" for="recFrequency">Frequency <span class="required">*</span></label>
+            <select id="recFrequency" class="gcw-select" [(ngModel)]="recFrequency">
+              <option value="WEEKLY">Weekly</option>
+              <option value="BIWEEKLY">Bi-weekly (Every 2 Weeks)</option>
+              <option value="MONTHLY">Monthly</option>
+            </select>
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="recTimeOfDay">Wash Start Time <span class="required">*</span></label>
+            <input id="recTimeOfDay" type="time" class="gcw-input" [(ngModel)]="recTimeOfDay" />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="recStartDate">Start Date <span class="required">*</span></label>
+            <input id="recStartDate" type="date" class="gcw-input" [(ngModel)]="recStartDate" />
+          </div>
+        </div>
+
+        <!-- Days of week pills -->
+        <div class="gcw-field">
+          <label class="gcw-label">Days of the Week</label>
+          <div class="days-pills-row">
+            @for (day of daysList; track day.value) {
+              <button
+                type="button"
+                class="day-pill-btn"
+                [class.active]="recDaysOfWeek().includes(day.value)"
+                (click)="toggleDayOfWeek(day.value)"
+              >
+                {{ day.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Vehicles selection -->
+        <div class="gcw-field">
+          <label class="gcw-label">Included Fleet Vehicles ({{ recSelectedVehicleIds().length }} Selected)</label>
+          <div class="checkboxes-scroll-box">
+            @for (v of fleetVehicles(); track v.id) {
+              <label class="checkbox-card-item">
+                <input
+                  type="checkbox"
+                  [checked]="recSelectedVehicleIds().includes(v.vehicleId)"
+                  (change)="toggleRecVehSelection(v.vehicleId)"
+                />
+                <div class="chk-label">
+                  <strong>{{ getVehicleTitle(v) }}</strong>
+                  <span class="chk-sub">{{ getVehicleSubtitle(v) }}</span>
+                </div>
+              </label>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="gcw-btn gcw-btn-primary"
+            [disabled]="submittingRecurring() || recSelectedVehicleIds().length === 0"
+            (click)="submitRecurringSchedule()"
+          >
+            {{ submittingRecurring() ? 'Saving Schedule…' : 'Create Schedule' }}
+          </button>
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeRecurringModal()">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Booking Detail Modal -->
+@if (selectedBookingDetail(); as detail) {
+  <div class="modal-overlay" (click)="closeBookingDetail()">
+    <div class="gcw-card modal-container modal-wide" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Bulk Fleet Wash Details (#{{ detail.id }})</h3>
+        <button type="button" class="close-btn" (click)="closeBookingDetail()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="detail-summary-grid">
+          <div>
+            <span class="detail-label">Status</span>
+            <div><app-status-badge [status]="detail.status" /></div>
+          </div>
+          <div>
+            <span class="detail-label">Scheduled Time</span>
+            <strong>{{ detail.scheduledAt | date: 'medium' }}</strong>
+          </div>
+          <div>
+            <span class="detail-label">Location Reference</span>
+            <span>Location #{{ detail.locationId }}</span>
+          </div>
+          <div>
+            <span class="detail-label">Package</span>
+            <span>Package #{{ detail.packageId }}</span>
+          </div>
+        </div>
+
+        <h4 style="margin: 1.25rem 0 0.5rem 0;">Per-Vehicle Wash Allocations</h4>
+        @if (detail.items && detail.items.length > 0) {
+          <div class="gcw-table-wrap">
+            <table class="gcw-table">
+              <thead>
+                <tr>
+                  <th>Vehicle ID</th>
+                  <th>Assignment Status</th>
+                  <th>Booking Reference</th>
+                  <th>Error / Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of detail.items; track item.id) {
+                  <tr>
+                    <td>Vehicle #{{ item.vehicleId }}</td>
+                    <td>
+                      <span class="gcw-badge" [class.gcw-badge-success]="item.status === 'CREATED'" [class.gcw-badge-danger]="item.status === 'FAILED'">
+                        {{ item.status }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (item.bookingId) {
+                        <a [routerLink]="['/bookings', item.bookingId]" class="table-link" target="_blank">
+                          #{{ item.bookingId }} (Track Wash →)
+                        </a>
+                      } @else {
+                        —
+                      }
+                    </td>
+                    <td>{{ item.errorMessage || '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="text-muted">No individual per-vehicle breakdown items available for this request.</p>
+        }
+
+        <div class="modal-footer" style="justify-content: flex-end;">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeBookingDetail()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,384 @@
+<div class="payments-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Corporate Payments & Settlements</h1>
+      <p class="page-subtitle">Manage payment authorizations, settle pending fleet bookings, and review transaction receipts.</p>
+    </div>
+    <div class="header-actions">
+      @if (unpaidBookings().length > 0) {
+        <button class="gcw-btn gcw-btn-primary" (click)="activeTab.set('PENDING_SETTLEMENT')">
+          <span>💳 Settle Pending Bookings ({{ unpaidBookings().length }})</span>
+        </button>
+      }
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadPayments()" [disabled]="loading()">
+        <span>↻ Refresh Data</span>
+      </button>
+    </div>
+  </div>
+
+  @if (toast(); as t) {
+    <div class="toast-alert" [class.toast-error]="t.type === 'error'">
+      <span>{{ t.text }}</span>
+    </div>
+  }
+
+  <!-- Real KPIs -->
+  <div class="metrics-grid">
+    <div class="metric-card gcw-card">
+      <div class="metric-icon paid-icon">💰</div>
+      <div class="metric-info">
+        <span class="metric-label">Total Settled</span>
+        <strong class="metric-val">{{ totalPaid() | currency:'USD':'symbol':'1.0-2' }}</strong>
+      </div>
+    </div>
+
+    <div class="metric-card gcw-card" [class.highlight-pending]="unpaidTotalAmount() > 0">
+      <div class="metric-icon pending-icon">⏳</div>
+      <div class="metric-info">
+        <span class="metric-label">Unsettled Balance</span>
+        <strong class="metric-val">{{ unpaidTotalAmount() | currency:'USD':'symbol':'1.0-2' }}</strong>
+      </div>
+    </div>
+
+    <div class="metric-card gcw-card">
+      <div class="metric-icon alert-icon">📋</div>
+      <div class="metric-info">
+        <span class="metric-label">Awaiting Payment</span>
+        <strong class="metric-val">{{ unpaidBookings().length }} booking(s)</strong>
+      </div>
+    </div>
+
+    <div class="metric-card gcw-card">
+      <div class="metric-icon count-icon">📑</div>
+      <div class="metric-info">
+        <span class="metric-label">Total Transactions</span>
+        <strong class="metric-val">{{ payments().length }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Primary Tab Switcher -->
+  <div class="main-tabs-row">
+    <button
+      type="button"
+      class="main-tab-btn"
+      [class.active]="activeTab() === 'TRANSACTIONS'"
+      (click)="activeTab.set('TRANSACTIONS')"
+    >
+      <span>Transactions & Receipts ({{ payments().length }})</span>
+    </button>
+    <button
+      type="button"
+      class="main-tab-btn"
+      [class.active]="activeTab() === 'PENDING_SETTLEMENT'"
+      (click)="activeTab.set('PENDING_SETTLEMENT')"
+    >
+      <span>Pending Settlements</span>
+      @if (unpaidBookings().length > 0) {
+        <span class="tab-count-badge">{{ unpaidBookings().length }}</span>
+      }
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="gcw-card state-card">
+      <div class="spinner"></div>
+      <p>Loading real-time payments and settlements from backend…</p>
+    </div>
+  } @else if (error()) {
+    <div class="gcw-card state-card error-card">
+      <div class="state-icon">⚠️</div>
+      <h3>Payments Unavailable</h3>
+      <p>{{ error() }}</p>
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadPayments()">Retry Connection</button>
+    </div>
+  } @else {
+    <!-- VIEW 1: PENDING SETTLEMENTS & UNPAID BOOKINGS -->
+    @if (activeTab() === 'PENDING_SETTLEMENT') {
+      <div class="unpaid-section">
+        @if (unpaidBookings().length === 0) {
+          <div class="gcw-card state-card success-card">
+            <div class="state-icon">✓</div>
+            <h3>All Fleet Bookings Fully Settled</h3>
+            <p>There are no outstanding wash service balances awaiting payment authorization.</p>
+            <button class="gcw-btn gcw-btn-secondary" (click)="activeTab.set('TRANSACTIONS')">
+              View Settled Receipts
+            </button>
+          </div>
+        } @else {
+          <div class="table-card gcw-card">
+            <div class="card-table-header">
+              <div>
+                <h3 class="card-table-title">Fleet Bookings Awaiting Payment ({{ unpaidBookings().length }})</h3>
+                <p class="card-table-sub">Authorize and charge payments to finalize bookings and trigger tax invoice generation.</p>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="payments-table">
+                <thead>
+                  <tr>
+                    <th>Booking Ref</th>
+                    <th>Vehicle</th>
+                    <th>Wash Package</th>
+                    <th>Scheduled Date</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th class="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (b of unpaidBookings(); track b.id) {
+                    <tr>
+                      <td>
+                        <strong class="pid-text">#{{ b.id }}</strong>
+                      </td>
+                      <td>
+                        <div class="veh-info-cell">
+                          <span class="veh-name">{{ getVehicleTitle(b.vehicleId) }}</span>
+                          <span class="veh-plate-sub">{{ getVehiclePlate(b.vehicleId) }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="pkg-label">{{ b.packageName || 'Eco Steam Wash' }}</span>
+                        @if (b.addOns && b.addOns.length > 0) {
+                          <span class="addon-sub">+{{ b.addOns.length }} add-on(s)</span>
+                        }
+                      </td>
+                      <td>
+                        <div class="date-cell">
+                          <span>{{ (b.scheduledAt || b.createdAt) | date:'mediumDate' }}</span>
+                          <span class="time-sub">{{ (b.scheduledAt || b.createdAt) | date:'shortTime' }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <strong class="amount-val highlight-val">{{ b.totalAmount | currency:'USD':'symbol':'1.2-2' }}</strong>
+                      </td>
+                      <td>
+                        <app-status-badge [status]="b.status" />
+                      </td>
+                      <td class="text-right">
+                        <button
+                          type="button"
+                          class="gcw-btn gcw-btn-sm gcw-btn-primary"
+                          (click)="openPayModal(b)"
+                        >
+                          Pay Now ({{ b.totalAmount | currency:'USD':'symbol':'1.0-0' }})
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- VIEW 2: TRANSACTIONS & RECEIPTS -->
+    @if (activeTab() === 'TRANSACTIONS') {
+      <div class="transactions-section">
+        <!-- Filters Toolbar -->
+        <div class="toolbar-card gcw-card">
+          <div class="filter-tabs">
+            <button type="button" class="tab-btn" [class.active]="statusFilter() === 'ALL'" (click)="statusFilter.set('ALL')">
+              All ({{ payments().length }})
+            </button>
+            <button type="button" class="tab-btn" [class.active]="statusFilter() === 'SUCCEEDED'" (click)="statusFilter.set('SUCCEEDED')">
+              Settled / Succeeded ({{ settledCount() }})
+            </button>
+            <button type="button" class="tab-btn" [class.active]="statusFilter() === 'PENDING'" (click)="statusFilter.set('PENDING')">
+              Pending ({{ pendingChargesCount() }})
+            </button>
+            <button type="button" class="tab-btn" [class.active]="statusFilter() === 'FAILED'" (click)="statusFilter.set('FAILED')">
+              Failed ({{ failedCount() }})
+            </button>
+          </div>
+
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              [(ngModel)]="searchQuery"
+              placeholder="Search by Payment ID, Booking ID, or Provider Ref…"
+              class="search-input"
+            />
+          </div>
+        </div>
+
+        @if (filteredPayments().length === 0) {
+          <div class="gcw-card state-card">
+            <div class="state-icon">💳</div>
+            <h3>No Payment Records Found</h3>
+            <p>
+              @if (searchQuery || statusFilter() !== 'ALL') {
+                No {{ statusFilter() !== 'ALL' ? (statusFilter() | lowercase) : '' }} transactions match your current search or filter.
+              } @else {
+                No payments recorded yet. Settle any pending bookings to generate payment receipts.
+              }
+            </p>
+            <div class="empty-state-actions">
+              @if (statusFilter() !== 'ALL' || searchQuery) {
+                <button class="gcw-btn gcw-btn-secondary" (click)="statusFilter.set('ALL'); searchQuery = ''">
+                  Reset Filter & View All Transactions ({{ payments().length }})
+                </button>
+              }
+              @if (unpaidBookings().length > 0) {
+                <button class="gcw-btn gcw-btn-primary" (click)="activeTab.set('PENDING_SETTLEMENT')">
+                  Settle {{ unpaidBookings().length }} Pending Booking(s)
+                </button>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="table-card gcw-card">
+            <div class="table-responsive">
+              <table class="payments-table">
+                <thead>
+                  <tr>
+                    <th>Payment ID</th>
+                    <th>Booking Ref</th>
+                    <th>Provider Reference</th>
+                    <th>Charge Type</th>
+                    <th>Date & Time</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of filteredPayments(); track p.id) {
+                    <tr>
+                      <td>
+                        <strong class="pid-text">#{{ p.id }}</strong>
+                      </td>
+                      <td>
+                        <a [routerLink]="['/corporate/history']" class="booking-link">
+                          Booking #{{ p.bookingId }}
+                        </a>
+                      </td>
+                      <td>
+                        <span class="txn-code">{{ p.providerReference || 'GATEWAY-REF-' + p.id }}</span>
+                      </td>
+                      <td>
+                        <span class="method-tag">{{ p.type || 'INITIAL' }}</span>
+                      </td>
+                      <td>
+                        <div class="date-cell">
+                          <span>{{ p.createdAt | date:'mediumDate' }}</span>
+                          <span class="time-sub">{{ p.createdAt | date:'shortTime' }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <strong class="amount-val">{{ p.amount | currency:'USD':'symbol':'1.2-2' }}</strong>
+                      </td>
+                      <td>
+                        <app-status-badge [status]="p.status" />
+                      </td>
+                      <td>
+                        @if (p.status === 'FAILED') {
+                          <button
+                            type="button"
+                            class="gcw-btn gcw-btn-sm gcw-btn-primary"
+                            (click)="openRetry(p)"
+                          >
+                            Retry Pay
+                          </button>
+                        } @else {
+                          <span class="settled-lbl">✓ Settled</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- PAY NOW MODAL -->
+  @if (payTargetBooking(); as b) {
+    <div class="modal-backdrop" (click)="closePayModal()">
+      <div class="modal-content gcw-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Authorize Payment for Booking #{{ b.id }}</h3>
+          <button type="button" class="close-btn" (click)="closePayModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="booking-pay-summary">
+            <div class="sum-row">
+              <span class="sum-lbl">Fleet Vehicle</span>
+              <strong class="sum-val">{{ getVehicleTitle(b.vehicleId) }} ({{ getVehiclePlate(b.vehicleId) }})</strong>
+            </div>
+            <div class="sum-row">
+              <span class="sum-lbl">Service Package</span>
+              <span class="sum-val">{{ b.packageName || 'Eco Steam Wash' }}</span>
+            </div>
+            <div class="sum-row total-row">
+              <span class="sum-lbl">Total Due</span>
+              <strong class="sum-total">{{ b.totalAmount | currency:'USD':'symbol':'1.2-2' }}</strong>
+            </div>
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="paymentSelect">Select Corporate Payment Method</label>
+            <select id="paymentSelect" class="gcw-select" [(ngModel)]="paymentMethodToken">
+              <option value="tok_corp_visa">Corporate Visa Commercial (•••• 8819)</option>
+              <option value="tok_corp_mastercard">Corporate Mastercard Fleet (•••• 4022)</option>
+              <option value="tok_corp_ach">Corporate Direct ACH Transfer (Account •••• 1044)</option>
+              <option value="tok_corp_wallet">Enterprise Prepaid Wash Wallet</option>
+            </select>
+          </div>
+
+          <p class="pay-guarantee-note">
+            🛡️ Secure enterprise checkout. Authorizing this charge will update the booking status and generate an official PDF tax invoice immediately.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closePayModal()" [disabled]="paying()">
+            Cancel
+          </button>
+          <button type="button" class="gcw-btn gcw-btn-primary" (click)="confirmPay()" [disabled]="paying()">
+            {{ paying() ? 'Authorizing Payment…' : ('Pay ' + (b.totalAmount | currency:'USD':'symbol':'1.2-2')) }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- RETRY MODAL -->
+  @if (retryPaymentTarget(); as target) {
+    <div class="modal-backdrop" (click)="closeRetry()">
+      <div class="modal-content gcw-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Retry Payment for Booking #{{ target.bookingId }}</h3>
+          <button type="button" class="close-btn" (click)="closeRetry()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Amount to settle: <strong>{{ target.amount | currency:'USD':'symbol':'1.2-2' }}</strong></p>
+          <div class="gcw-field">
+            <label class="gcw-label" for="paymentMethodSelect">Select Corporate Payment Method</label>
+            <select id="paymentMethodSelect" class="gcw-select" [(ngModel)]="retryPaymentToken">
+              <option value="tok_corp_mastercard">Corporate Mastercard (•••• 4022)</option>
+              <option value="tok_corp_visa">Corporate Visa Commercial (•••• 8819)</option>
+              <option value="tok_corp_upi">Corporate UPI / NetBanking Gateway</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeRetry()" [disabled]="retrying()">Cancel</button>
+          <button type="button" class="gcw-btn gcw-btn-primary" (click)="confirmRetry()" [disabled]="retrying()">
+            {{ retrying() ? 'Authorizing…' : 'Process Payment' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

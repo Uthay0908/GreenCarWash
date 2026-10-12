@@ -1,0 +1,25 @@
+@if (vehicle(); as v) {
+  <div class="gcw-page-header">
+    <div>
+      <h1>{{ v.make }} {{ v.model }}</h1>
+      <p>{{ v.licensePlate }}</p>
+    </div>
+    <a [routerLink]="['/vehicles', v.id, 'edit']" class="gcw-btn gcw-btn-primary">Edit Vehicle</a>
+  </div>
+
+  <div class="gcw-card detail-card">
+    <dl class="detail-grid">
+      <div><dt>Make</dt><dd>{{ v.make }}</dd></div>
+      <div><dt>Model</dt><dd>{{ v.model }}</dd></div>
+      <div><dt>Type</dt><dd>{{ v.vehicleType }}</dd></div>
+      <div><dt>Color</dt><dd>{{ v.color || '—' }}</dd></div>
+      <div><dt>Registration</dt><dd>{{ v.licensePlate }}</dd></div>
+      <div><dt>Status</dt><dd>{{ v.active ? 'Active' : 'Inactive' }}</dd></div>
+    </dl>
+    @if (v.notes) {
+      <p class="notes"><strong>Notes:</strong> {{ v.notes }}</p>
+    }
+  </div>
+} @else {
+  <div class="gcw-empty">Vehicle not found.</div>
+}

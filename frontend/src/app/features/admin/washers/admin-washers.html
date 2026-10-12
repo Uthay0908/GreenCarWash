@@ -1,0 +1,559 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Washer Operations &amp; KYC</h1>
+    <p>Manage washer verification, profile activations, dispatch reliability, and performance leaderboard.</p>
+  </div>
+</div>
+
+@if (toastMessage()) {
+  <div class="gcw-alert gcw-alert-success">{{ toastMessage() }}</div>
+}
+
+<div class="tab-nav">
+  <button class="tab-btn" [class.active]="currentTab() === 'directory'" (click)="setTab('directory')">
+    Washer Directory ({{ totalElements() }})
+  </button>
+  <button class="tab-btn" [class.active]="currentTab() === 'kyc-queue'" (click)="setTab('kyc-queue')">
+    KYC Verification Queue
+    @if (kycTotalElements() > 0) {
+      <span class="badge-count">{{ kycTotalElements() }}</span>
+    }
+  </button>
+  <button class="tab-btn" [class.active]="currentTab() === 'rejection-stats'" (click)="setTab('rejection-stats')">
+    SLA Risk &amp; Rejections
+  </button>
+  <button class="tab-btn" [class.active]="currentTab() === 'leaderboard'" (click)="setTab('leaderboard')">
+    Performance Leaderboard
+  </button>
+</div>
+
+<!-- Tab 1: Washer Directory -->
+@if (currentTab() === 'directory') {
+  <div class="gcw-card">
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Filter by KYC Status:</label>
+        <select
+          class="gcw-input"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event); currentPage.set(0); loadWashers()"
+        >
+          <option value="ALL">All Statuses</option>
+          <option value="PENDING">Pending Review</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="gcw-table-wrap">
+      <table class="gcw-table">
+        <thead>
+          <tr>
+            <th>Washer ID</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>KYC Status</th>
+            <th>Avg Rating</th>
+            <th>Completed Jobs</th>
+            <th>Platform Status</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (w of washers(); track w.id) {
+            <tr>
+              <td><strong>#{{ w.id }}</strong></td>
+              <td class="bold clickable" (click)="openWasherDetails(w)" title="View Complete Washer Profile">
+                <span class="washer-link">{{ w.fullName }}</span>
+              </td>
+              <td>{{ w.email }}</td>
+              <td>{{ w.phone }}</td>
+              <td><app-status-badge [status]="w.kycStatus" /></td>
+              <td>
+                <span class="rating-val">&#9733; {{ (w.averageRating || 0) | number: '1.1-1' }}</span>
+              </td>
+              <td><strong>{{ w.totalCompletedJobs }}</strong> washes</td>
+              <td>
+                <span class="gcw-badge" [class.gcw-badge-success]="w.active" [class.gcw-badge-danger]="!w.active">
+                  {{ w.active ? 'Active' : 'Deactivated' }}
+                </span>
+              </td>
+              <td class="text-right">
+                <div class="table-actions">
+                  <button class="gcw-btn gcw-btn-sm gcw-btn-outline" (click)="openWasherDetails(w)" title="View Washer Details">
+                    View
+                  </button>
+                  @if (w.kycStatus === 'PENDING') {
+                    <button class="gcw-btn gcw-btn-sm gcw-btn-success" (click)="quickApprove(w)" title="Instant KYC approval">
+                      ✓ Approve
+                    </button>
+                    <button class="gcw-btn gcw-btn-sm gcw-btn-primary" (click)="openKycReview(w)">
+                      Review KYC
+                    </button>
+                  }
+                  <button
+                    class="gcw-btn gcw-btn-sm"
+                    [class.gcw-btn-danger]="w.active"
+                    [class.gcw-btn-success]="!w.active"
+                    (click)="toggleWasherActive(w)"
+                  >
+                    {{ w.active ? 'Deactivate' : 'Reactivate' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="9" class="empty-state">No washers found matching status filter.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Reusable Server-Side Pagination -->
+    <app-pagination
+      [currentPage]="currentPage()"
+      [pageSize]="pageSize()"
+      [totalElements]="totalElements()"
+      [pageSizeOptions]="[10, 20, 50]"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  </div>
+}
+
+<!-- Tab 2: KYC Queue -->
+@if (currentTab() === 'kyc-queue') {
+  <div class="gcw-card">
+    <div class="gcw-table-wrap">
+      <table class="gcw-table">
+        <thead>
+          <tr>
+            <th>Profile ID</th>
+            <th>Applicant Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Submission Date</th>
+            <th>Skills</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (w of pendingKycWashers(); track w.id) {
+            <tr>
+              <td><strong>#{{ w.id }}</strong></td>
+              <td class="bold clickable" (click)="openWasherDetails(w)">
+                <span class="washer-link">{{ w.fullName }}</span>
+              </td>
+              <td>{{ w.email }}</td>
+              <td>{{ w.phone }}</td>
+              <td>{{ w.createdAt | date: 'medium' }}</td>
+              <td>
+                <div class="skills-wrap">
+                  @for (s of w.skills; track s) {
+                    <span class="skill-pill">{{ s }}</span>
+                  }
+                </div>
+              </td>
+              <td class="text-right">
+                <div class="table-actions">
+                  <button class="gcw-btn gcw-btn-sm gcw-btn-outline" (click)="openWasherDetails(w)">
+                    View
+                  </button>
+                  <button class="gcw-btn gcw-btn-sm gcw-btn-success" (click)="quickApprove(w)" title="Instant KYC approval">
+                    ✓ Approve
+                  </button>
+                  <button class="gcw-btn gcw-btn-sm gcw-btn-primary" (click)="openKycReview(w)">
+                    Review Documents
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="empty-state">No pending KYC submissions in the queue.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Reusable Pagination for KYC Queue -->
+    <app-pagination
+      [currentPage]="kycPage()"
+      [pageSize]="kycPageSize()"
+      [totalElements]="kycTotalElements()"
+      [pageSizeOptions]="[10, 20, 50]"
+      (pageChange)="onKycPageChange($event)"
+      (pageSizeChange)="onKycPageSizeChange($event)"
+    />
+  </div>
+}
+
+<!-- Tab 3: Rejection Stats & SLA Risk -->
+@if (currentTab() === 'rejection-stats') {
+  <div class="gcw-card">
+    <div class="card-header-note">
+      <p>Washer reliability and timeout analysis over the last 168 hours (7-day lookback). Flagged washers have exceeded thresholds.</p>
+    </div>
+    <div class="gcw-table-wrap">
+      <table class="gcw-table">
+        <thead>
+          <tr>
+            <th>Washer ID</th>
+            <th>Washer Name</th>
+            <th>Rejections</th>
+            <th>Timeouts</th>
+            <th>No-Shows</th>
+            <th>Total Flagged</th>
+            <th>Risk State</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of rejectionStats(); track r.washerProfileId) {
+            <tr>
+              <td><strong>#{{ r.washerProfileId }}</strong></td>
+              <td>{{ r.washerName }}</td>
+              <td>{{ r.rejectionCount }}</td>
+              <td>{{ r.timeoutCount }}</td>
+              <td>{{ r.noShowCount }}</td>
+              <td><strong>{{ r.totalFlaggedEvents }}</strong></td>
+              <td>
+                <span class="gcw-badge gcw-badge-danger">FLAGGED FOR REVIEW</span>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="empty-state">No washers currently exceeding risk thresholds.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- Tab 4: Performance Leaderboard -->
+@if (currentTab() === 'leaderboard') {
+  <div class="gcw-card">
+    <div class="gcw-table-wrap">
+      <table class="gcw-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Washer Name</th>
+            <th>Profile ID</th>
+            <th>Acceptance Rate</th>
+            <th>Average Rating</th>
+            <th>Total Completed Jobs</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (lb of leaderboard(); track lb.washerProfileId) {
+            <tr>
+              <td>
+                <span class="rank-badge" [class.gold]="lb.rank === 1" [class.silver]="lb.rank === 2" [class.bronze]="lb.rank === 3">
+                  #{{ lb.rank }}
+                </span>
+              </td>
+              <td><strong>{{ lb.washerName }}</strong></td>
+              <td>#{{ lb.washerProfileId }}</td>
+              <td>{{ (lb.acceptanceRate * 100) | number: '1.0-0' }}%</td>
+              <td>&#9733; {{ lb.averageRating | number: '1.1-1' }}</td>
+              <td>{{ lb.totalCompletedJobs }} washes</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty-state">No leaderboard data recorded yet.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<!-- Comprehensive Washer Details Modal -->
+@if (detailsWasher()) {
+  <div class="gcw-modal-backdrop" (click)="closeWasherDetails()">
+    <div class="gcw-modal-card modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>Washer Details: {{ detailsWasher()?.fullName }}</h3>
+          <span class="modal-subtitle">Washer ID #{{ detailsWasher()?.id }} &bull; User Account #{{ detailsWasher()?.userAccountId }}</span>
+        </div>
+        <button class="btn-close" (click)="closeWasherDetails()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Overview Grid -->
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Full Name</span>
+            <span class="detail-val">{{ detailsWasher()?.fullName }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Email Address</span>
+            <span class="detail-val">{{ detailsWasher()?.email }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Phone Number</span>
+            <span class="detail-val">{{ detailsWasher()?.phone }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">KYC Verification</span>
+            <span class="detail-val"><app-status-badge [status]="detailsWasher()?.kycStatus || 'PENDING'" /></span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Platform Active</span>
+            <span class="detail-val">
+              <span class="gcw-badge" [class.gcw-badge-success]="detailsWasher()?.active" [class.gcw-badge-danger]="!detailsWasher()?.active">
+                {{ detailsWasher()?.active ? 'Active' : 'Deactivated' }}
+              </span>
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Performance Rating</span>
+            <span class="detail-val font-amber">&#9733; {{ (detailsWasher()?.averageRating || 0) | number: '1.1-1' }} ({{ detailsWasher()?.totalCompletedJobs }} completed)</span>
+          </div>
+        </div>
+
+        <!-- Live Working & Availability Status -->
+        <div class="section-divider">
+          <h4>Live Dispatch &amp; Working Status</h4>
+        </div>
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Live Availability</span>
+            <span class="detail-val">
+              @if (washerAvailability()?.online) {
+                <span class="gcw-badge gcw-badge-success">● ONLINE / AVAILABLE</span>
+              } @else {
+                <span class="gcw-badge gcw-badge-secondary">○ OFFLINE</span>
+              }
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Service Radius</span>
+            <span class="detail-val">{{ washerAvailability()?.serviceRadiusKm || 15 }} km</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Max Concurrent Jobs</span>
+            <span class="detail-val">{{ washerAvailability()?.maxConcurrentJobs || 1 }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Working Hours</span>
+            <span class="detail-val">
+              {{ washerAvailability()?.workingHoursStart || '08:00' }} &ndash; {{ washerAvailability()?.workingHoursEnd || '18:00' }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">GPS Coordinates</span>
+            <span class="detail-val">
+              @if (washerAvailability()?.currentLatitude) {
+                {{ washerAvailability()?.currentLatitude | number: '1.4-4' }}, {{ washerAvailability()?.currentLongitude | number: '1.4-4' }}
+              } @else {
+                Base: {{ washerAvailability()?.baseLatitude || 37.7749 | number: '1.2-2' }}, {{ washerAvailability()?.baseLongitude || -122.4194 | number: '1.2-2' }}
+              }
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Last Status Update</span>
+            <span class="detail-val">{{ (washerAvailability()?.updatedAt || detailsWasher()?.createdAt) | date: 'short' }}</span>
+          </div>
+        </div>
+
+        <!-- Skills & Certifications -->
+        <div class="section-divider">
+          <h4>Skills &amp; Capabilities</h4>
+        </div>
+        <div class="skills-wrap">
+          @for (s of detailsWasher()?.skills || []; track s) {
+            <span class="skill-pill">{{ s }}</span>
+          } @empty {
+            <span class="empty-text">No specialized skills tagged.</span>
+          }
+        </div>
+
+        <!-- Payout / Banking Details -->
+        <div class="section-divider">
+          <h4>Payout &amp; Banking Details</h4>
+        </div>
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Stripe Connect Account</span>
+            <span class="detail-val">
+              @if (detailsWasher()?.stripeConnectedAccountId) {
+                <code>{{ detailsWasher()?.stripeConnectedAccountId }}</code>
+              } @else {
+                <span class="empty-text">Not connected</span>
+              }
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Bank Account Holder</span>
+            <span class="detail-val">{{ detailsWasher()?.bankAccountHolderName || 'Not configured' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Account / IFSC</span>
+            <span class="detail-val">
+              @if (detailsWasher()?.bankAccountNumber) {
+                •••• {{ detailsWasher()?.bankAccountNumber?.slice(-4) }} ({{ detailsWasher()?.bankIfscCode || 'IFSC' }})
+              } @else {
+                <span class="empty-text">Not provided</span>
+              }
+            </span>
+          </div>
+        </div>
+
+        <!-- KYC Documents -->
+        <div class="section-divider">
+          <h4>Submitted KYC Documents ({{ washerDocuments().length }})</h4>
+        </div>
+        @if (washerDocuments().length > 0) {
+          <div class="docs-grid">
+            @for (doc of washerDocuments(); track doc.id) {
+              <div class="doc-card">
+                <span class="doc-type">{{ doc.documentType }}</span>
+                <span class="doc-status-tag" [class.verified]="doc.status === 'APPROVED'">{{ doc.status || 'SUBMITTED' }}</span>
+                <img [src]="doc.fileUrl || doc.documentUrl" alt="KYC Document" class="doc-img" />
+                <small>Uploaded: {{ (doc.submittedAt || doc.uploadedAt) | date: 'short' }}</small>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="empty-text">No KYC documents submitted yet.</p>
+        }
+
+        <!-- Booking History -->
+        <div class="section-divider">
+          <h4>Assigned / Completed Washes ({{ washerBookings().length }})</h4>
+        </div>
+        @if (washerBookings().length > 0) {
+          <div class="table-responsive mini-table-wrap">
+            <table class="gcw-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>Customer</th>
+                  <th>Package</th>
+                  <th>Status</th>
+                  <th>Total Amount</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (b of washerBookings(); track b.id) {
+                  <tr>
+                    <td><code>#GCW{{ b.id }}</code></td>
+                    <td>Customer #{{ b.customerId }}</td>
+                    <td>Package #{{ b.packageId }}</td>
+                    <td>
+                      <span class="gcw-badge" [class.gcw-badge-success]="b.status === 'COMPLETED'" [class.gcw-badge-warning]="b.status === 'IN_PROGRESS' || b.status === 'ACCEPTED'">
+                        {{ b.status }}
+                      </span>
+                    </td>
+                    <td><strong>${{ b.totalAmount || b.packagePrice || 0 }}</strong></td>
+                    <td>{{ b.createdAt | date: 'short' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="empty-text">No jobs assigned or completed yet by this washer.</p>
+        }
+      </div>
+
+      <div class="modal-footer">
+        @if (detailsWasher()?.kycStatus === 'PENDING') {
+          <button class="gcw-btn gcw-btn-success" (click)="detailsWasher() && quickApprove(detailsWasher()!)">
+            ✓ Approve KYC
+          </button>
+          <button class="gcw-btn gcw-btn-primary" (click)="detailsWasher() && openKycReview(detailsWasher()!)">
+            Review KYC Docs
+          </button>
+        }
+        <button
+          class="gcw-btn"
+          [class.gcw-btn-danger]="detailsWasher()?.active"
+          [class.gcw-btn-success]="!detailsWasher()?.active"
+          (click)="detailsWasher() && toggleWasherActive(detailsWasher()!)"
+        >
+          {{ detailsWasher()?.active ? 'Deactivate Washer' : 'Reactivate Washer' }}
+        </button>
+        <button class="gcw-btn gcw-btn-outline" (click)="closeWasherDetails()">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- KYC Review Modal -->
+@if (showKycModal()) {
+  <div class="gcw-modal-backdrop" (click)="closeKycModal()">
+    <div class="gcw-modal-card kyc-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>KYC Verification for {{ reviewingWasher()?.fullName }}</h3>
+        <button class="btn-close" (click)="closeKycModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h4>Submitted Identification Documents</h4>
+        <div class="docs-grid">
+          @for (doc of washerDocuments(); track doc.id) {
+            <div class="doc-card">
+              <span class="doc-type">{{ doc.documentType }}</span>
+              <img [src]="doc.fileUrl || doc.documentUrl" alt="KYC Document" class="doc-img" />
+              <small>Uploaded: {{ (doc.submittedAt || doc.uploadedAt) | date: 'short' }}</small>
+            </div>
+          } @empty {
+            <p class="empty-docs">No documents attached.</p>
+          }
+        </div>
+
+        <div class="review-actions-form">
+          <div class="form-group">
+            <label>Review Decision</label>
+            <div class="radio-row">
+              <label class="radio-label">
+                <input
+                  type="radio"
+                  name="decision"
+                  [value]="true"
+                  [ngModel]="reviewForm().approve"
+                  (ngModelChange)="reviewForm().approve = $event"
+                />
+                Approve KYC &amp; Enable Dispatch
+              </label>
+              <label class="radio-label">
+                <input
+                  type="radio"
+                  name="decision"
+                  [value]="false"
+                  [ngModel]="reviewForm().approve"
+                  (ngModelChange)="reviewForm().approve = $event"
+                />
+                Reject KYC
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Verification Notes / Rejection Reason</label>
+            <textarea
+              class="gcw-input"
+              rows="3"
+              placeholder="Enter notes visible to the compliance log..."
+              [ngModel]="reviewForm().notes"
+              (ngModelChange)="reviewForm().notes = $event"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="gcw-btn gcw-btn-outline" (click)="closeKycModal()">Cancel</button>
+        <button
+          class="gcw-btn"
+          [class.gcw-btn-primary]="reviewForm().approve"
+          [class.gcw-btn-danger]="!reviewForm().approve"
+          (click)="submitKycReview()"
+        >
+          {{ reviewForm().approve ? 'Confirm Approval' : 'Confirm Rejection' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

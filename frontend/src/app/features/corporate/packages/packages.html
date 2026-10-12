@@ -1,0 +1,128 @@
+<div class="packages-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Service Packages & Catalog</h1>
+      <p class="page-subtitle">Commercial fleet wash solutions, inclusions, and add-on treatments.</p>
+    </div>
+    <a routerLink="/corporate/bookings" class="gcw-btn gcw-btn-primary">
+      <span>Schedule Fleet Wash</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+        <polyline points="12 5 19 12 12 19"></polyline>
+      </svg>
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="gcw-card state-card">
+      <div class="spinner"></div>
+      <p>Loading commercial service catalog from server…</p>
+    </div>
+  } @else if (error()) {
+    <div class="gcw-card state-card error-card">
+      <div class="state-icon">⚠️</div>
+      <h3>Catalog Unavailable</h3>
+      <p>{{ error() }}</p>
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadCatalog()">Retry</button>
+    </div>
+  } @else if (packages().length === 0) {
+    <div class="gcw-card state-card">
+      <div class="state-icon">📦</div>
+      <h3>No Packages Available</h3>
+      <p>No service packages are currently configured in the catalog service.</p>
+    </div>
+  } @else {
+    <div class="section-title-row">
+      <h2 class="section-title">Standard & Deep Clean Packages</h2>
+      <span class="count-badge">{{ packages().length }} packages</span>
+    </div>
+
+    <div class="packages-grid">
+      @for (pkg of packages(); track pkg.id) {
+        <div class="package-card gcw-card">
+          <div class="package-header">
+            <h3 class="package-name">{{ pkg.name }}</h3>
+            <div class="package-price">
+              <span class="price-val">{{ pkg.price | currency:'USD':'symbol':'1.0-2' }}</span>
+              <span class="price-sub">/ vehicle</span>
+            </div>
+          </div>
+
+          <p class="package-desc">{{ pkg.description }}</p>
+
+          <div class="specs-row">
+            <div class="spec-item">
+              <span class="spec-label">Duration</span>
+              <span class="spec-val">⏱️ {{ pkg.durationMinutes }} mins</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Water Allocated</span>
+              <span class="spec-val">💧 {{ pkg.allocatedWaterLiters }} L</span>
+            </div>
+          </div>
+
+          @if (pkg.tasks && pkg.tasks.length > 0) {
+            <div class="features-list">
+              <span class="features-heading">Services Included:</span>
+              <ul>
+                @for (task of pkg.tasks; track task.id) {
+                  <li>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>{{ task.name }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
+          <div class="card-footer">
+            <a routerLink="/corporate/bookings" class="gcw-btn gcw-btn-secondary gcw-btn-block">
+              Select in Fleet Booking
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (addOns().length > 0) {
+      <div class="section-title-row add-ons-row">
+        <div>
+          <h2 class="section-title">Fleet Add-On Treatments</h2>
+          <p class="section-subtitle">Can be attached during individual or bulk wash reservations.</p>
+        </div>
+        <span class="count-badge">{{ addOns().length }} add-ons</span>
+      </div>
+
+      <div class="addons-grid">
+        @for (addon of addOns(); track addon.id) {
+          <div class="addon-card gcw-card">
+            <div class="addon-top">
+              <div class="addon-title-box">
+                <span class="addon-icon">✨</span>
+                <h4 class="addon-name">{{ addon.name }}</h4>
+              </div>
+              <span class="addon-price">{{ addon.price | currency:'USD':'symbol':'1.0-2' }}</span>
+            </div>
+            <p class="addon-desc">{{ addon.description }}</p>
+            @if (addon.tasks && addon.tasks.length > 0) {
+              <div class="features-list" style="margin-top: 0.5rem;">
+                <ul>
+                  @for (task of addon.tasks; track task.id) {
+                    <li>
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      <span>{{ task.name }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

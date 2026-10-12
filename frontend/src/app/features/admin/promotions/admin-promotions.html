@@ -1,0 +1,136 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Promotions & Coupons</h1>
+    <p>Configure discount codes, minimum spend thresholds, usage caps, and validity periods.</p>
+  </div>
+  <button class="gcw-btn gcw-btn-primary" (click)="openCreateModal()">
+    + Create New Coupon
+  </button>
+</div>
+
+@if (toastMessage()) {
+  <div class="gcw-alert gcw-alert-success">{{ toastMessage() }}</div>
+}
+
+<div class="gcw-card">
+  <div class="gcw-table-wrap">
+    <table class="gcw-table">
+      <thead>
+        <tr>
+          <th>Coupon Code</th>
+          <th>Discount</th>
+          <th>Min Spend</th>
+          <th>Max Cap</th>
+          <th>Redemptions</th>
+          <th>Valid Until</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of promotions(); track p.id) {
+          <tr>
+            <td><span class="coupon-code-badge">{{ p.code }}</span></td>
+            <td>
+              <strong>
+                {{ p.discountType === 'PERCENTAGE' ? p.discountValue + '%' : ('$' + p.discountValue) }} OFF
+              </strong>
+            </td>
+            <td>${{ p.minBookingAmount || 0 }}</td>
+            <td>{{ p.maxDiscountAmount ? ('$' + p.maxDiscountAmount) : 'No cap' }}</td>
+            <td>
+              <strong>{{ p.usageCount }}</strong>
+              @if (p.usageLimit) {
+                <span class="limit-text"> / {{ p.usageLimit }}</span>
+              }
+            </td>
+            <td>{{ (p.validTo || p.expiresAt) | date: 'mediumDate' }}</td>
+            <td>
+              <span class="gcw-badge" [class.gcw-badge-success]="p.active" [class.gcw-badge-danger]="!p.active">
+                {{ p.active ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td>
+              <button
+                class="gcw-btn gcw-btn-sm"
+                [class.gcw-btn-danger]="p.active"
+                [class.gcw-btn-success]="!p.active"
+                (click)="toggleActive(p)"
+              >
+                {{ p.active ? 'Deactivate' : 'Activate' }}
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="8" class="empty-state">No promotions registered.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal -->
+@if (showModal()) {
+  <div class="gcw-modal-backdrop" (click)="closeModal()">
+    <div class="gcw-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Create Promotion / Coupon</h3>
+        <button class="btn-close" (click)="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>Coupon Code</label>
+            <input type="text" class="gcw-input" [(ngModel)]="code" placeholder="e.g. ECOWASH20" />
+          </div>
+          <div class="form-group flex-1">
+            <label>Discount Type</label>
+            <select class="gcw-input" [(ngModel)]="discountType">
+              <option value="PERCENTAGE">Percentage (%)</option>
+              <option value="FIXED_AMOUNT">Fixed Dollar ($)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>Discount Value</label>
+            <input type="number" class="gcw-input" [(ngModel)]="discountValue" />
+          </div>
+          <div class="form-group flex-1">
+            <label>Min. Booking Spend ($)</label>
+            <input type="number" class="gcw-input" [(ngModel)]="minBookingAmount" />
+          </div>
+          <div class="form-group flex-1">
+            <label>Max Discount Cap ($)</label>
+            <input type="number" class="gcw-input" [(ngModel)]="maxDiscountAmount" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Campaign Description</label>
+          <input type="text" class="gcw-input" [(ngModel)]="description" placeholder="Short description..." />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>Usage Limit (Redemption Cap)</label>
+            <input type="number" class="gcw-input" [(ngModel)]="usageLimit" />
+          </div>
+          <div class="form-group flex-1">
+            <label>Valid From</label>
+            <input type="date" class="gcw-input" [(ngModel)]="validFrom" />
+          </div>
+          <div class="form-group flex-1">
+            <label>Valid Until</label>
+            <input type="date" class="gcw-input" [(ngModel)]="validTo" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="gcw-btn gcw-btn-outline" (click)="closeModal()">Cancel</button>
+        <button class="gcw-btn gcw-btn-primary" (click)="savePromotion()">Create Coupon</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,84 @@
+<div class="reviews-page">
+  <div class="page-header">
+    <div>
+      <div class="badge-row">
+        <span class="review-badge">Reputation Moderation</span>
+        <span class="live-dot">Review Service (FR-A-23)</span>
+      </div>
+      <h1 class="page-title">Reviews & Feedback Moderation</h1>
+      <p class="page-subtitle">Inspect customer reviews, audit washer feedback, and toggle public visibility for policy compliance.</p>
+    </div>
+  </div>
+
+  @if (toastMessage()) {
+    <div class="toast-banner">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Review ID</th>
+            <th>Booking</th>
+            <th>Customer</th>
+            <th>Washer</th>
+            <th>Rating</th>
+            <th>Customer Comment</th>
+            <th>Moderation Status</th>
+            <th>Date</th>
+            <th class="actions-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of reviews(); track r.id) {
+            <tr>
+              <td><code>#{{ r.id }}</code></td>
+              <td><span class="booking-link">#{{ r.bookingId }}</span></td>
+              <td>UID #{{ r.customerId }}</td>
+              <td class="bold">{{ r.washerName || ('Washer #' + r.washerProfileId) }}</td>
+              <td>
+                <app-star-rating [rating]="r.rating" />
+              </td>
+              <td class="comment-cell">"{{ r.comment }}"</td>
+              <td>
+                <span class="status-pill" [class]="r.moderationStatus.toLowerCase()">
+                  {{ r.moderationStatus }}
+                </span>
+              </td>
+              <td class="text-muted">{{ r.createdAt | date:'short' }}</td>
+              <td class="actions-cell">
+                <button
+                  class="btn-sm"
+                  [class.btn-hide]="r.moderationStatus === 'VISIBLE'"
+                  [class.btn-show]="r.moderationStatus === 'HIDDEN'"
+                  (click)="toggleModeration(r)">
+                  {{ r.moderationStatus === 'VISIBLE' ? 'Hide Review' : 'Make Visible' }}
+                </button>
+              </td>
+            </tr>
+          }
+          @if (reviews().length === 0 && !loading()) {
+            <tr>
+              <td colspan="9" class="empty-state">No reviews found.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalElements() > 0) {
+      <app-pagination
+        [currentPage]="currentPage()"
+        [pageSize]="pageSize()"
+        [totalElements]="totalElements()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      />
+    }
+  </div>
+</div>

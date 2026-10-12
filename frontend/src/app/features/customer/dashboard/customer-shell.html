@@ -1,0 +1,38 @@
+<div class="gcw-customer-layout">
+  <!-- Desktop / Tablet Left Sidebar -->
+  <app-customer-sidebar
+    [user]="auth.currentUser()"
+    (logoutRequested)="promptLogout()"
+  />
+
+  <!-- Main Customer Content Area -->
+  <div class="gcw-customer-main">
+    <!-- Top Sticky Header -->
+    <app-customer-header
+      [user]="auth.currentUser()"
+      [waterSaved]="waterSaved()"
+      [unreadNotifs]="unreadNotifications()"
+    />
+
+    <!-- Routed Page Content -->
+    <main class="gcw-customer-content">
+      <router-outlet />
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Navigation (<900px) -->
+  <app-customer-bottom-nav />
+
+  <!-- Logout Confirmation Dialog -->
+  <app-customer-confirm-dialog
+    [isOpen]="showLogoutModal()"
+    [title]="'Are you sure you want to log out?'"
+    [message]="'You will need to sign in again to access your vehicles, orders, and rewards.'"
+    [confirmLabel]="'Log Out'"
+    [cancelLabel]="'Cancel'"
+    [isDanger]="true"
+    [icon]="'🚪'"
+    (confirmed)="confirmLogout()"
+    (cancelled)="cancelLogout()"
+  />
+</div>

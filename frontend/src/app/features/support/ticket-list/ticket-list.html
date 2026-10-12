@@ -1,0 +1,38 @@
+<div class="gcw-page-header">
+  <div>
+    <h1>Support Tickets</h1>
+    <p>Get help with your bookings and account.</p>
+  </div>
+  <a routerLink="/support/new" class="gcw-btn gcw-btn-primary">+ Create Ticket</a>
+</div>
+
+<div class="gcw-card">
+  <div class="gcw-table-wrap">
+    <table class="gcw-table">
+      <thead>
+        <tr>
+          <th>Ticket ID</th>
+          <th>Subject</th>
+          <th>Created</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (t of tickets(); track t.id) {
+          <tr>
+            <td>#{{ t.id }}</td>
+            <td>{{ t.subject }}</td>
+            <td>{{ t.createdAt | date: 'mediumDate' }}</td>
+            <td><span [class]="priorityClass(t.priority)">{{ t.priority }}</span></td>
+            <td><app-status-badge [status]="t.status" /></td>
+            <td><a [routerLink]="['/support', t.id]" class="gcw-btn gcw-btn-secondary gcw-btn-sm">View</a></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="gcw-empty">No support tickets yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

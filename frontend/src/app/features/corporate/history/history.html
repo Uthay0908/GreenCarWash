@@ -1,0 +1,309 @@
+<div class="history-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Service History & Live Tracking</h1>
+      <p class="page-subtitle">Track individual vehicle washes, washer assignment status, and real-time execution timelines.</p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/corporate/bookings" class="gcw-btn gcw-btn-primary">
+        <span>New Booking Request</span>
+      </a>
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadBookings()" [disabled]="loading()">
+        <span>↻ Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  @if (toast(); as t) {
+    <div class="toast-alert" [class.toast-error]="t.type === 'error'">
+      <span>{{ t.text }}</span>
+    </div>
+  }
+
+  <!-- Filters and Search Toolbar -->
+  <div class="toolbar-card gcw-card">
+    <div class="filter-tabs">
+      <button type="button" class="tab-btn" [class.active]="statusFilter() === 'ALL'" (click)="statusFilter.set('ALL')">
+        All Services
+      </button>
+      <button type="button" class="tab-btn" [class.active]="statusFilter() === 'ACTIVE'" (click)="statusFilter.set('ACTIVE')">
+        Active / In Progress
+      </button>
+      <button type="button" class="tab-btn" [class.active]="statusFilter() === 'COMPLETED'" (click)="statusFilter.set('COMPLETED')">
+        Completed
+      </button>
+      <button type="button" class="tab-btn" [class.active]="statusFilter() === 'CANCELLED'" (click)="statusFilter.set('CANCELLED')">
+        Cancelled
+      </button>
+    </div>
+
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        placeholder="Search by Booking ID, vehicle, or package…"
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="gcw-card state-card">
+      <div class="spinner"></div>
+      <p>Loading fleet service history from server…</p>
+    </div>
+  } @else if (error()) {
+    <div class="gcw-card state-card error-card">
+      <div class="state-icon">⚠️</div>
+      <h3>Unable to Load History</h3>
+      <p>{{ error() }}</p>
+      <button class="gcw-btn gcw-btn-secondary" (click)="loadBookings()">Retry Connection</button>
+    </div>
+  } @else if (filteredBookings().length === 0) {
+    <div class="gcw-card state-card">
+      <div class="state-icon">📋</div>
+      <h3>No Service Bookings Found</h3>
+      <p>
+        @if (searchQuery || statusFilter() !== 'ALL') {
+          No bookings match the selected filters.
+        } @else {
+          Your organization has not scheduled any vehicle washes yet.
+        }
+      </p>
+      <a routerLink="/corporate/bookings" class="gcw-btn gcw-btn-primary">Create Fleet Wash</a>
+    </div>
+  } @else {
+    <div class="table-card gcw-card">
+      <div class="table-responsive">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Vehicle Asset</th>
+              <th>Package</th>
+              <th>Scheduled Time</th>
+              <th>Assigned Washer</th>
+              <th>Status</th>
+              <th>Amount</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (booking of filteredBookings(); track booking.id) {
+              <tr>
+                <td>
+                  <strong class="booking-id">#{{ booking.id }}</strong>
+                </td>
+                <td>
+                  <div class="vehicle-cell">
+                    <span class="veh-title">{{ getVehicleTitle(booking.vehicleId) }}</span>
+                    <span class="veh-plate">{{ getVehiclePlate(booking.vehicleId) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="package-cell">
+                    <span class="pkg-name">{{ booking.packageName || 'Wash Package #' + booking.packageId }}</span>
+                    @if (booking.addOns && booking.addOns.length > 0) {
+                      <span class="addons-tag">+{{ booking.addOns.length }} add-on(s)</span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <div class="date-cell">
+                    <span>{{ booking.scheduledAt ? (booking.scheduledAt | date:'mediumDate') : (booking.createdAt | date:'mediumDate') }}</span>
+                    <span class="time-sub">{{ booking.scheduledAt ? (booking.scheduledAt | date:'shortTime') : (booking.createdAt | date:'shortTime') }}</span>
+                  </div>
+                </td>
+                <td>
+                  @if (booking.washerProfileId) {
+                    <div class="washer-cell">
+                      <span class="washer-name">Washer #{{ booking.washerProfileId }}</span>
+                    </div>
+                  } @else {
+                    <span class="unassigned-tag">Awaiting Assignment</span>
+                  }
+                </td>
+                <td>
+                  <app-status-badge [status]="booking.status" />
+                </td>
+                <td>
+                  <strong class="price-text">{{ booking.totalAmount | currency:'USD':'symbol':'1.0-2' }}</strong>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button
+                      type="button"
+                      class="gcw-btn gcw-btn-sm gcw-btn-secondary"
+                      (click)="openTimeline(booking)"
+                      title="View Status Timeline & Tracking"
+                    >
+                      Timeline
+                    </button>
+
+                    @if (booking.status === 'COMPLETED') {
+                      <button
+                        type="button"
+                        class="gcw-btn gcw-btn-sm gcw-btn-secondary"
+                        (click)="viewInvoice(booking)"
+                        title="View Tax Invoice"
+                      >
+                        Invoice
+                      </button>
+                    }
+
+                    @if (['PENDING', 'ASSIGNMENT_PENDING', 'ASSIGNED'].includes(booking.status)) {
+                      <button
+                        type="button"
+                        class="gcw-btn gcw-btn-sm gcw-btn-danger"
+                        (click)="requestCancel(booking)"
+                        title="Cancel this wash reservation"
+                      >
+                        Cancel
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Timeline Modal -->
+  @if (selectedTimelineBooking(); as b) {
+    <div class="modal-backdrop" (click)="closeTimeline()">
+      <div class="modal-content gcw-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">Live Tracking & Status Timeline</h3>
+            <p class="modal-sub">Booking #{{ b.id }} &bull; Vehicle #{{ b.vehicleId }}</p>
+          </div>
+          <button type="button" class="close-btn" (click)="closeTimeline()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="tracking-summary-card">
+            <div class="summary-col">
+              <span class="col-label">Current Status</span>
+              <app-status-badge [status]="b.status" />
+            </div>
+            <div class="summary-col">
+              <span class="col-label">Assigned Washer</span>
+              <span class="col-val">{{ b.washerProfileId ? ('Washer #' + b.washerProfileId) : 'Awaiting Washer Assignment' }}</span>
+            </div>
+            <div class="summary-col">
+              <span class="col-label">Scheduled For</span>
+              <span class="col-val">{{ b.scheduledAt ? (b.scheduledAt | date:'medium') : 'On-Demand Wash' }}</span>
+            </div>
+          </div>
+
+          @if (loadingTimeline()) {
+            <div class="modal-spinner">
+              <div class="spinner"></div>
+              <span>Fetching live status audit trail…</span>
+            </div>
+          } @else if (timelineEvents().length === 0) {
+            <div class="empty-timeline">
+              <p>No transition events recorded yet for this booking.</p>
+            </div>
+          } @else {
+            <div class="timeline-list">
+              @for (evt of timelineEvents(); track $index) {
+                <div class="timeline-item">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-content">
+                    <div class="timeline-header">
+                      <span class="event-status">{{ evt.toStatus || evt.status }}</span>
+                      <span class="event-time">{{ (evt.timestamp || evt.changedAt) | date:'medium' }}</span>
+                    </div>
+                    @if (evt.description || evt.reason) {
+                      <p class="event-note">{{ evt.description || evt.reason }}</p>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeTimeline()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Cancellation Modal -->
+  @if (cancelBookingTarget(); as target) {
+    <div class="modal-backdrop" (click)="closeCancelModal()">
+      <div class="modal-content gcw-card confirm-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Cancel Wash Reservation</h3>
+          <button type="button" class="close-btn" (click)="closeCancelModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to cancel booking <strong>#{{ target.id }}</strong> for vehicle <strong>#{{ target.vehicleId }}</strong>?</p>
+          <div class="gcw-field">
+            <label class="gcw-label" for="cancelReasonInput">Reason for cancellation</label>
+            <input
+              id="cancelReasonInput"
+              type="text"
+              class="gcw-input"
+              [(ngModel)]="cancelReason"
+              placeholder="e.g. Fleet vehicle out for maintenance"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeCancelModal()" [disabled]="cancelling()">Keep Booking</button>
+          <button type="button" class="gcw-btn gcw-btn-danger" (click)="confirmCancel()" [disabled]="cancelling()">
+            {{ cancelling() ? 'Cancelling…' : 'Confirm Cancel' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Invoice View Modal -->
+  @if (selectedInvoice(); as inv) {
+    <div class="modal-backdrop" (click)="closeInvoiceModal()">
+      <div class="modal-content gcw-card invoice-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">Tax Invoice #{{ inv.invoiceNumber || inv.id }}</h3>
+            <p class="modal-sub">Issued: {{ inv.issuedAt | date:'mediumDate' }} &bull; Refund: {{ inv.refundStatus }}</p>
+          </div>
+          <button type="button" class="close-btn" (click)="closeInvoiceModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="invoice-summary-grid">
+            <div class="inv-box">
+              <span class="inv-lbl">Subtotal</span>
+              <span class="inv-val">{{ inv.subtotal | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            <div class="inv-box">
+              <span class="inv-lbl">Discount</span>
+              <span class="inv-val">{{ inv.discountAmount | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            <div class="inv-box highlight">
+              <span class="inv-lbl">Total Paid</span>
+              <span class="inv-val">{{ inv.totalAmount | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeInvoiceModal()">Close</button>
+          <button type="button" class="gcw-btn gcw-btn-primary" (click)="downloadPdf(inv.id, inv.invoiceNumber)">
+            <span>⬇ Download PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

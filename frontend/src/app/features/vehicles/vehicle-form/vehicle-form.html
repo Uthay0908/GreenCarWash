@@ -1,0 +1,184 @@
+<div class="gcw-vehicle-form-page">
+  <div class="gcw-page-header">
+    <div>
+      <h1 class="page-title">{{ editingId() ? 'Edit Vehicle' : 'Register Vehicle' }}</h1>
+      <p class="page-subtitle">{{ editingId() ? 'Update your vehicle information and service preferences.' : 'Add your vehicle to enable doorstep eco-steam wash bookings.' }}</p>
+    </div>
+    <a routerLink="/vehicles" class="btn-back-link">← Back to Vehicles</a>
+  </div>
+
+  <div class="vehicle-form-container">
+    <app-customer-card
+      [title]="editingId() ? 'Vehicle Information' : 'New Vehicle Details'"
+      subtitle="Fields are registered directly to your customer profile for booking assignments"
+      headerIcon="🚗"
+    >
+      @if (errorMessage()) {
+        <div class="gcw-error-alert">
+          <span>⚠️</span>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="vehicle-form-body">
+        <div class="form-two-col-grid">
+          <!-- Make -->
+          <div class="gcw-field">
+            <label class="gcw-label" for="make">Make / Brand *</label>
+            <input
+              id="make"
+              type="text"
+              class="gcw-input"
+              formControlName="make"
+              placeholder="e.g. Hyundai, Honda, Tata"
+            />
+            @if (f.make.invalid && f.make.touched) {
+              <div class="field-error-text">Vehicle make is required.</div>
+            }
+          </div>
+
+          <!-- Model -->
+          <div class="gcw-field">
+            <label class="gcw-label" for="model">Model *</label>
+            <input
+              id="model"
+              type="text"
+              class="gcw-input"
+              formControlName="model"
+              placeholder="e.g. Creta SX, City, Nexon"
+            />
+            @if (f.model.invalid && f.model.touched) {
+              <div class="field-error-text">Vehicle model is required.</div>
+            }
+          </div>
+        </div>
+
+        <div class="form-three-col-grid">
+          <!-- Vehicle Type -->
+          <div class="gcw-field">
+            <label class="gcw-label" for="vehicleType">Vehicle Type *</label>
+            <select id="vehicleType" class="gcw-select" formControlName="vehicleType">
+              @for (t of vehicleTypes; track t) {
+                <option [value]="t">{{ t }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Color -->
+          <div class="gcw-field">
+            <label class="gcw-label" for="color">Exterior Color</label>
+            <input
+              id="color"
+              type="text"
+              class="gcw-input"
+              formControlName="color"
+              placeholder="e.g. Polar White, Gray"
+            />
+          </div>
+
+          <!-- License Plate -->
+          <div class="gcw-field">
+            <label class="gcw-label" for="licensePlate">License Plate *</label>
+            <input
+              id="licensePlate"
+              type="text"
+              class="gcw-input uppercase-input"
+              formControlName="licensePlate"
+              placeholder="e.g. 7XYZ123 (California)"
+            />
+            @if (f.licensePlate.invalid && f.licensePlate.touched) {
+              <div class="field-error-text">License plate is required.</div>
+            }
+          </div>
+        </div>
+
+        <!-- Real Original Car Photo Upload Section -->
+        <div class="gcw-field car-upload-field-block">
+          <label class="gcw-label">Car Photo (Original Vehicle Image)</label>
+          <div class="car-photo-upload-zone">
+            @if (uploadedImage()) {
+              <div class="uploaded-car-preview-card">
+                <img [src]="uploadedImage()" alt="Your car preview" class="uploaded-car-img" />
+                <div class="preview-overlay-actions">
+                  <label class="btn-change-photo" title="Replace with different image">
+                    📷 Change Photo
+                    <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onFileSelected($event)" style="display:none;" />
+                  </label>
+                  <button type="button" class="btn-remove-photo" (click)="removeUploadedPhoto()" title="Remove image">
+                    🗑️ Remove
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="upload-dropzone-box">
+                <span class="upload-icon-graphic">📸</span>
+                <strong class="upload-primary-text">Upload Real Photo of Your Car</strong>
+                <p class="upload-sub-text">PNG, JPG, or WEBP up to 5MB. Helps our washer identify your vehicle instantly.</p>
+                <label class="btn-browse-file">
+                  <span>Browse File</span>
+                  <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onFileSelected($event)" style="display:none;" />
+                </label>
+              </div>
+            }
+          </div>
+
+          <!-- Optional Preset Fallback -->
+          <details class="preset-accordion-toggle">
+            <summary class="preset-summary-label">Or choose from vehicle presets / URL</summary>
+            <div class="presets-row">
+              @for (p of presets; track p.label) {
+                <button
+                  type="button"
+                  class="preset-card-btn"
+                  [class.is-selected-preset]="form.value.imageUrl === p.url"
+                  (click)="selectPreset(p)"
+                >
+                  <img [src]="p.url" [alt]="p.label" class="preset-thumb" />
+                  <span class="preset-caption">{{ p.label }}</span>
+                </button>
+              }
+            </div>
+
+            <label class="gcw-label sub-label" for="imageUrl">Or Web Image URL</label>
+            <input
+              id="imageUrl"
+              type="url"
+              class="gcw-input"
+              formControlName="imageUrl"
+              placeholder="https://example.com/my-car.jpg"
+            />
+          </details>
+        </div>
+
+        <!-- Parking / Access Notes -->
+        <div class="gcw-field">
+          <label class="gcw-label" for="notes">Parking & Shade Location Notes (Optional)</label>
+          <textarea
+            id="notes"
+            class="gcw-textarea"
+            rows="3"
+            formControlName="notes"
+            placeholder="e.g. Covered parking in slot B-14, Basement 1. Security guard has access keys."
+          ></textarea>
+        </div>
+
+        <!-- Form Action Buttons -->
+        <div class="form-cta-strip">
+          <a routerLink="/vehicles" class="btn-cancel-form">
+            Cancel
+          </a>
+          <app-customer-button
+            type="submit"
+            variant="primary"
+            size="md"
+            [disabled]="submitting()"
+            [loading]="submitting()"
+            icon="💾"
+          >
+            {{ editingId() ? 'Save Changes' : 'Register Vehicle' }}
+          </app-customer-button>
+        </div>
+      </form>
+    </app-customer-card>
+  </div>
+</div>

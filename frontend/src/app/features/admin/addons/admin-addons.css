@@ -1,0 +1,43 @@
+.price-val {
+  color: var(--gcw-primary);
+  font-size: 1.05rem;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.tasks-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.task-builder-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-del {
+  background: #fee2e2;
+  color: var(--gcw-danger);
+  border: none;
+  font-size: 1.25rem;
+  border-radius: 4px;
+  width: 32px;
+  cursor: pointer;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem !important;
+  color: var(--gcw-text-muted);
+}

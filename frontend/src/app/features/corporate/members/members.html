@@ -1,0 +1,984 @@
+<div class="gcw-page-header">
+  <div>
+    <div class="header-pretitle">
+      <span class="org-badge">{{ organization()?.name || 'Corporate Fleet' }}</span>
+      <span class="sep">•</span>
+      <span class="status-indicator">Enterprise Roster</span>
+    </div>
+    <h1>Team &amp; Fleet Drivers</h1>
+    <p>Manage your company's fleet administrators, dispatchers, and authorized commercial drivers.</p>
+  </div>
+  @if (organization()) {
+    <div class="header-actions">
+      @if (formVisible()) {
+        <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeForm()">
+          ✕ Close Form
+        </button>
+      } @else {
+        <button type="button" class="gcw-btn gcw-btn-primary" (click)="openAddForm(activeTab() === 'DRIVERS' ? 'DRIVER' : 'TEAM')">
+          {{ activeTab() === 'DRIVERS' ? '+ Register Fleet Driver' : '+ Add Team Member' }}
+        </button>
+      }
+    </div>
+  }
+</div>
+
+<!-- Toast Alert -->
+@if (toastMessage(); as t) {
+  <div class="gcw-card alert-card" [class.alert-success]="t.type === 'success'" [class.alert-danger]="t.type === 'error'">
+    <span class="alert-icon">{{ t.type === 'success' ? '✓' : '⚠️' }}</span>
+    <span class="alert-text">{{ t.text }}</span>
+  </div>
+}
+
+<!-- KPI Overview Metrics -->
+<div class="kpi-grid">
+  <div class="gcw-card kpi-card">
+    <div class="kpi-icon-wrap icon-team">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+    </div>
+    <div class="kpi-body">
+      <span class="kpi-label">Team &amp; Managers</span>
+      <div class="kpi-val">{{ totalTeamCount() }}</div>
+      <span class="kpi-sub">{{ ownerCount() }} Owner • {{ adminCount() }} Admins</span>
+    </div>
+  </div>
+
+  <div class="gcw-card kpi-card">
+    <div class="kpi-icon-wrap icon-driver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polygon points="12 8 8 12 12 16 16 12 12 8"></polygon>
+      </svg>
+    </div>
+    <div class="kpi-body">
+      <span class="kpi-label">Total Fleet Drivers</span>
+      <div class="kpi-val">{{ totalDriversCount() }}</div>
+      <span class="kpi-sub">Commercial CDL Operators</span>
+    </div>
+  </div>
+
+  <div class="gcw-card kpi-card kpi-highlight">
+    <div class="kpi-icon-wrap icon-available">
+      <span class="pulse-dot"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+    </div>
+    <div class="kpi-body">
+      <span class="kpi-label">Drivers Available Now</span>
+      <div class="kpi-val text-success">{{ availableDriversCount() }}</div>
+      <span class="kpi-sub">Ready for Dispatch &amp; Washes</span>
+    </div>
+  </div>
+
+  <div class="gcw-card kpi-card">
+    <div class="kpi-icon-wrap icon-vehicles">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="1" y="3" width="15" height="13"></rect>
+        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+      </svg>
+    </div>
+    <div class="kpi-body">
+      <span class="kpi-label">Vehicles Assigned</span>
+      <div class="kpi-val">{{ assignedVehiclesCount() }}</div>
+      <span class="kpi-sub">of {{ fleetVehicles().length }} fleet vehicles</span>
+    </div>
+  </div>
+</div>
+
+<!-- Add Member / Driver Form Modal/Card -->
+@if (formVisible()) {
+  <div class="gcw-card add-entry-card">
+    <div class="card-head">
+      <div class="form-mode-tabs">
+        <button
+          type="button"
+          class="mode-tab-btn"
+          [class.active]="formMode() === 'TEAM'"
+          (click)="formMode.set('TEAM')"
+        >
+          <span class="tab-icon">👤</span> Add Team Member / Admin
+        </button>
+        <button
+          type="button"
+          class="mode-tab-btn"
+          [class.active]="formMode() === 'DRIVER'"
+          (click)="formMode.set('DRIVER')"
+        >
+          <span class="tab-icon">🚗</span> Register Fleet Driver
+        </button>
+      </div>
+      <button type="button" class="btn-close-form" (click)="closeForm()" title="Close">✕</button>
+    </div>
+
+    <!-- FORM: ADD TEAM MEMBER -->
+    @if (formMode() === 'TEAM') {
+      <div class="form-desc-banner">
+        <strong>Authorized Team Member</strong>
+        <p>Grant organization dashboard access to company employees, dispatchers, or managers. Select a registered company account or specify credentials.</p>
+      </div>
+
+      <div class="quick-pick-box">
+        <label class="gcw-label" for="quickAccountSelect">
+          ⚡ Quick Select from Company Accounts:
+        </label>
+        <select
+          id="quickAccountSelect"
+          class="gcw-select quick-select"
+          (change)="onQuickAccountSelected($event)"
+          [value]="selectedQuickAccountId ?? 'CUSTOM'"
+        >
+          @for (acc of quickAccounts; track acc.userAccountId) {
+            <option [value]="acc.userAccountId">
+              {{ acc.fullName }} ({{ acc.email }} • Account ID: {{ acc.userAccountId }}) — {{ acc.roleHint }}
+            </option>
+          }
+          <option value="CUSTOM">+ Enter Custom User Account ID</option>
+        </select>
+      </div>
+
+      <form [formGroup]="teamForm" (ngSubmit)="submitAddMember()" novalidate class="entry-form">
+        <div class="form-grid">
+          <div class="gcw-field">
+            <label class="gcw-label" for="memberFullName">
+              Full Name <span class="required">*</span>
+            </label>
+            <input
+              id="memberFullName"
+              type="text"
+              class="gcw-input"
+              formControlName="fullName"
+              placeholder="e.g. Sarah Jenkins"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="memberEmail">
+              Corporate Email <span class="required">*</span>
+            </label>
+            <input
+              id="memberEmail"
+              type="email"
+              class="gcw-input"
+              formControlName="email"
+              placeholder="e.g. sarah.j@ecofleet.com"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="memberUserAccountId">
+              User Account ID <span class="required">*</span>
+              <small class="helper-text">(Auto-resolved from account)</small>
+            </label>
+            <input
+              id="memberUserAccountId"
+              type="number"
+              class="gcw-input"
+              formControlName="userAccountId"
+              placeholder="e.g. 2"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="memberPhone">Phone Number</label>
+            <input
+              id="memberPhone"
+              type="tel"
+              class="gcw-input"
+              formControlName="phone"
+              placeholder="+1 (555) 000-0000"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="memberRole">
+              Organization Role <span class="required">*</span>
+            </label>
+            <select id="memberRole" class="gcw-select" formControlName="role">
+              <option value="ADMIN">ADMIN (Can manage fleet, bookings, invoices &amp; drivers)</option>
+              <option value="MEMBER">MEMBER (Can view fleet &amp; request washes)</option>
+            </select>
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="memberDept">Department / Title</label>
+            <input
+              id="memberDept"
+              type="text"
+              class="gcw-input"
+              formControlName="department"
+              placeholder="e.g. Fleet Operations, Logistics"
+            />
+          </div>
+        </div>
+
+        <div class="form-btn-row">
+          <button type="submit" class="gcw-btn gcw-btn-primary" [disabled]="adding()">
+            {{ adding() ? 'Adding Member…' : '✓ Add Team Member' }}
+          </button>
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeForm()">
+            Cancel
+          </button>
+        </div>
+      </form>
+    }
+
+    <!-- FORM: REGISTER FLEET DRIVER -->
+    @if (formMode() === 'DRIVER') {
+      <div class="form-desc-banner">
+        <strong>Register Commercial Fleet Driver</strong>
+        <p>Add an authorized driver to your corporate fleet roster and assign them a dedicated fleet vehicle.</p>
+      </div>
+
+      <form [formGroup]="driverForm" (ngSubmit)="submitAddDriver()" novalidate class="entry-form">
+        <div class="form-grid">
+          <div class="gcw-field">
+            <label class="gcw-label" for="driverName">
+              Driver Full Name <span class="required">*</span>
+            </label>
+            <input
+              id="driverName"
+              type="text"
+              class="gcw-input"
+              formControlName="fullName"
+              placeholder="e.g. Marcus Vance"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="driverEmail">
+              Contact Email <span class="required">*</span>
+            </label>
+            <input
+              id="driverEmail"
+              type="email"
+              class="gcw-input"
+              formControlName="email"
+              placeholder="e.g. marcus.v@ecofleet.com"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="driverPhone">
+              Contact Phone <span class="required">*</span>
+            </label>
+            <input
+              id="driverPhone"
+              type="tel"
+              class="gcw-input"
+              formControlName="phone"
+              placeholder="+1 (555) 678-9012"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="driverLicense">
+              Commercial License Number <span class="required">*</span>
+            </label>
+            <input
+              id="driverLicense"
+              type="text"
+              class="gcw-input"
+              formControlName="licenseNumber"
+              placeholder="e.g. CDL-IL-67341"
+            />
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="driverVehicle">
+              Assigned Fleet Vehicle
+            </label>
+            <select id="driverVehicle" class="gcw-select" formControlName="assignedVehicleId">
+              <option [ngValue]="null">-- Unassigned (Standby Pool) --</option>
+              @for (fv of fleetVehicles(); track fv.id) {
+                <option [ngValue]="fv.vehicleId">
+                  {{ fv.label || ('Vehicle #' + fv.vehicleId) }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="gcw-field">
+            <label class="gcw-label" for="driverStatus">
+              Initial Duty Status <span class="required">*</span>
+            </label>
+            <select id="driverStatus" class="gcw-select" formControlName="status">
+              <option value="AVAILABLE">AVAILABLE (On Duty &amp; Ready)</option>
+              <option value="ON_ROUTE">ON_ROUTE (Currently Dispatched)</option>
+              <option value="OFF_DUTY">OFF_DUTY (Resting / Inactive)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-btn-row">
+          <button type="submit" class="gcw-btn gcw-btn-primary" [disabled]="adding()">
+            {{ adding() ? 'Registering Driver…' : '✓ Register Fleet Driver' }}
+          </button>
+          <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeForm()">
+            Cancel
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+}
+
+<!-- MAIN CONTENT CARD -->
+@if (loading()) {
+  <div class="gcw-card loading-card">
+    <div class="spinner"></div>
+    <p>Loading fleet team &amp; drivers…</p>
+  </div>
+} @else if (!organization()) {
+  <div class="gcw-card gcw-empty">
+    <p>No active organization found. Please register an organization first.</p>
+    <a routerLink="/corporate/organization" class="gcw-btn gcw-btn-primary gcw-btn-sm">
+      Register Organization
+    </a>
+  </div>
+} @else {
+  <!-- SEGMENTED NAVIGATION TABS -->
+  <div class="segmented-nav-wrap">
+    <div class="segmented-nav">
+      <button
+        type="button"
+        class="nav-tab"
+        [class.active]="activeTab() === 'TEAM'"
+        (click)="switchTab('TEAM')"
+      >
+        <span class="tab-icon">👥</span>
+        <span class="tab-text">Team &amp; Management</span>
+        <span class="tab-pill">{{ totalTeamCount() }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab"
+        [class.active]="activeTab() === 'DRIVERS'"
+        (click)="switchTab('DRIVERS')"
+      >
+        <span class="tab-icon">🚗</span>
+        <span class="tab-text">Fleet Drivers</span>
+        <span class="tab-pill tab-pill-driver">{{ totalDriversCount() }}</span>
+        @if (availableDriversCount() > 0) {
+          <span class="live-avail-badge">
+            <span class="avail-dot"></span> {{ availableDriversCount() }} Available
+          </span>
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: TEAM & MANAGERS -->
+  @if (activeTab() === 'TEAM') {
+    <div class="gcw-card content-card">
+      <div class="toolbar-row">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Search by name, email, account ID or role…"
+            [value]="teamSearch()"
+            (input)="teamSearch.set($any($event.target).value)"
+          />
+          @if (teamSearch()) {
+            <button type="button" class="search-clear" (click)="teamSearch.set('')">✕</button>
+          }
+        </div>
+
+        <div class="filter-pills">
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="teamRoleFilter() === 'ALL'"
+            (click)="teamRoleFilter.set('ALL')"
+          >
+            All Roles ({{ members().length }})
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="teamRoleFilter() === 'OWNER'"
+            (click)="teamRoleFilter.set('OWNER')"
+          >
+            👑 Owners ({{ ownerCount() }})
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="teamRoleFilter() === 'ADMIN'"
+            (click)="teamRoleFilter.set('ADMIN')"
+          >
+            🛡️ Admins ({{ adminCount() }})
+          </button>
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="teamRoleFilter() === 'MEMBER'"
+            (click)="teamRoleFilter.set('MEMBER')"
+          >
+            👤 Members ({{ memberRoleCount() }})
+          </button>
+        </div>
+      </div>
+
+      <div class="gcw-table-wrap">
+        <table class="gcw-table">
+          <thead>
+            <tr>
+              <th>Member Profile</th>
+              <th>Contact Details</th>
+              <th>Account ID</th>
+              <th>Organization Role</th>
+              <th>Joined Date</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of filteredMembers(); track m.id) {
+              <tr class="member-row">
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar-circle" [class.avatar-owner]="m.role === 'OWNER'" [class.avatar-admin]="m.role === 'ADMIN'">
+                      {{ getInitials(m.fullName || ('User ' + m.userAccountId)) }}
+                    </div>
+                    <div class="user-meta">
+                      <strong class="user-name">{{ m.fullName || ('User Account #' + m.userAccountId) }}</strong>
+                      <span class="user-sub">{{ m.role === 'OWNER' ? 'Organization Primary Owner' : (m.role === 'ADMIN' ? 'Fleet Administrator' : 'Authorized Dispatcher') }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="contact-meta">
+                    <a href="mailto:{{ m.email }}" class="contact-email">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mini-icon">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                      </svg>
+                      {{ m.email || 'No email on file' }}
+                    </a>
+                    @if (m.phone) {
+                      <span class="contact-phone">{{ m.phone }}</span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <span class="code-badge">#{{ m.userAccountId }}</span>
+                </td>
+                <td>
+                  <span
+                    class="gcw-badge role-badge"
+                    [class.gcw-badge-warning]="m.role === 'OWNER'"
+                    [class.gcw-badge-info]="m.role === 'ADMIN'"
+                    [class.gcw-badge-neutral]="m.role === 'MEMBER'"
+                  >
+                    @if (m.role === 'OWNER') { 👑 OWNER }
+                    @else if (m.role === 'ADMIN') { 🛡️ ADMIN }
+                    @else { 👤 MEMBER }
+                  </span>
+                </td>
+                <td>
+                  <span class="date-text">{{ m.addedAt | date: 'mediumDate' }}</span>
+                </td>
+                <td style="text-align: right;">
+                  <div class="actions-group">
+                    <button
+                      type="button"
+                      class="gcw-btn gcw-btn-sm gcw-btn-secondary"
+                      (click)="openDetailModal('MEMBER', m)"
+                      title="View Member Details"
+                    >
+                      👁️ Details
+                    </button>
+
+                    @if (m.role === 'OWNER') {
+                      <span class="owner-pill">Primary Owner</span>
+                    } @else if (confirmRemoveId() === m.id) {
+                      <div class="confirm-inline">
+                        <span>Confirm?</span>
+                        <button type="button" class="gcw-btn gcw-btn-danger gcw-btn-sm" (click)="confirmRemoveMember(m.id)">
+                          Yes, Remove
+                        </button>
+                        <button type="button" class="gcw-btn gcw-btn-secondary gcw-btn-sm" (click)="cancelRemoveMember()">
+                          ✕
+                        </button>
+                      </div>
+                    } @else {
+                      <button type="button" class="gcw-btn gcw-btn-danger gcw-btn-sm" (click)="requestRemoveMember(m.id)">
+                        Remove
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="gcw-empty">
+                  No team members found matching your search criteria.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 2: FLEET DRIVERS -->
+  @if (activeTab() === 'DRIVERS') {
+    <div class="gcw-card content-card">
+      <div class="toolbar-row">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Search drivers by name, email, license #, or vehicle…"
+            [value]="driverSearch()"
+            (input)="driverSearch.set($any($event.target).value)"
+          />
+          @if (driverSearch()) {
+            <button type="button" class="search-clear" (click)="driverSearch.set('')">✕</button>
+          }
+        </div>
+
+        <div class="filter-pills">
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="driverStatusFilter() === 'ALL'"
+            (click)="driverStatusFilter.set('ALL')"
+          >
+            All Drivers ({{ drivers().length }})
+          </button>
+          <button
+            type="button"
+            class="filter-pill pill-success"
+            [class.active]="driverStatusFilter() === 'AVAILABLE'"
+            (click)="driverStatusFilter.set('AVAILABLE')"
+          >
+            🟢 Available ({{ availableDriversCount() }})
+          </button>
+          <button
+            type="button"
+            class="filter-pill pill-warning"
+            [class.active]="driverStatusFilter() === 'ON_ROUTE'"
+            (click)="driverStatusFilter.set('ON_ROUTE')"
+          >
+            🟡 On Route ({{ onRouteDriversCount() }})
+          </button>
+          <button
+            type="button"
+            class="filter-pill pill-neutral"
+            [class.active]="driverStatusFilter() === 'OFF_DUTY'"
+            (click)="driverStatusFilter.set('OFF_DUTY')"
+          >
+            ⚪ Off Duty ({{ offDutyDriversCount() }})
+          </button>
+        </div>
+      </div>
+
+      <!-- Prominent Availability Banner -->
+      <div class="driver-avail-banner">
+        <div class="avail-banner-content">
+          <div class="avail-indicator-bubble">
+            <span class="pulse-indicator"></span>
+            <strong>{{ availableDriversCount() }} Commercial Drivers Currently Available</strong>
+          </div>
+          <p>Drivers marked "Available" are on duty and ready to take fleet vehicles to eco-wash hubs or accept job dispatches.</p>
+        </div>
+        <button
+          type="button"
+          class="gcw-btn gcw-btn-sm gcw-btn-primary"
+          (click)="openAddForm('DRIVER')"
+        >
+          + Add Driver
+        </button>
+      </div>
+
+      <div class="gcw-table-wrap">
+        <table class="gcw-table">
+          <thead>
+            <tr>
+              <th>Driver Profile</th>
+              <th>Commercial License</th>
+              <th>Assigned Fleet Vehicle</th>
+              <th>Duty Status</th>
+              <th>Service Stats</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of filteredDrivers(); track d.id) {
+              <tr class="driver-row">
+                <td>
+                  <div class="user-cell">
+                    <div class="driver-avatar-wrap">
+                      <div class="avatar-circle avatar-driver">
+                        {{ getInitials(d.fullName) }}
+                      </div>
+                      <span
+                        class="status-indicator-dot"
+                        [class.status-dot-available]="d.status === 'AVAILABLE'"
+                        [class.status-dot-onroute]="d.status === 'ON_ROUTE'"
+                        [class.status-dot-offduty]="d.status === 'OFF_DUTY'"
+                        title="{{ d.status }}"
+                      ></span>
+                    </div>
+                    <div class="user-meta">
+                      <strong class="user-name">{{ d.fullName }}</strong>
+                      <span class="user-sub">{{ d.email }} • {{ d.phone }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="license-badge">{{ d.licenseNumber }}</span>
+                </td>
+                <td>
+                  @if (d.assignedVehicleLabel) {
+                    <div class="assigned-vehicle-pill" (click)="openReassignModal(d)" title="Click to reassign vehicle">
+                      <span class="veh-icon">🚗</span>
+                      <span class="veh-label">{{ d.assignedVehicleLabel }}</span>
+                      <span class="reassign-hint">✎</span>
+                    </div>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn-unassigned-pill"
+                      (click)="openReassignModal(d)"
+                    >
+                      + Assign Fleet Vehicle
+                    </button>
+                  }
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="duty-toggle-btn"
+                    [class.duty-available]="d.status === 'AVAILABLE'"
+                    [class.duty-onroute]="d.status === 'ON_ROUTE'"
+                    [class.duty-offduty]="d.status === 'OFF_DUTY'"
+                    (click)="cycleDriverStatus(d)"
+                    title="Click to toggle status (Available ➔ On Route ➔ Off Duty)"
+                  >
+                    @if (d.status === 'AVAILABLE') { 🟢 Available / On Duty }
+                    @else if (d.status === 'ON_ROUTE') { 🟡 On Route }
+                    @else { ⚪ Off Duty }
+                    <span class="cycle-arrow">↻</span>
+                  </button>
+                </td>
+                <td>
+                  <div class="stats-meta">
+                    <span class="wash-count"><strong>{{ d.totalWashesCompleted }}</strong> washes</span>
+                    <span class="driver-rating">⭐ {{ d.rating || 5.0 }}</span>
+                  </div>
+                </td>
+                <td style="text-align: right;">
+                  <div class="actions-group">
+                    <button
+                      type="button"
+                      class="gcw-btn gcw-btn-sm gcw-btn-secondary"
+                      (click)="openDetailModal('DRIVER', d)"
+                      title="View Complete Driver Profile"
+                    >
+                      👁️ Details
+                    </button>
+
+                    @if (confirmRemoveDriverId() === d.id) {
+                      <div class="confirm-inline">
+                        <span>Remove?</span>
+                        <button type="button" class="gcw-btn gcw-btn-danger gcw-btn-sm" (click)="confirmRemoveDriver(d.id)">
+                          Yes
+                        </button>
+                        <button type="button" class="gcw-btn gcw-btn-secondary gcw-btn-sm" (click)="cancelRemoveDriver()">
+                          ✕
+                        </button>
+                      </div>
+                    } @else {
+                      <button
+                        type="button"
+                        class="gcw-btn gcw-btn-danger gcw-btn-sm"
+                        (click)="requestRemoveDriver(d.id)"
+                        title="Remove Driver"
+                      >
+                        Remove
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="gcw-empty">
+                  No fleet drivers found matching your filter criteria.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+}
+
+<!-- DETAILS MODAL (MEMBER OR DRIVER) -->
+@if (selectedDetailItem(); as item) {
+  <div class="modal-backdrop" (click)="closeDetailModal()">
+    <div class="modal-card detail-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="badge-modal-type">{{ item.type === 'MEMBER' ? 'TEAM MEMBER' : 'FLEET DRIVER' }}</span>
+          <h3>Profile &amp; Authorization Details</h3>
+        </div>
+        <button type="button" class="btn-modal-close" (click)="closeDetailModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- TEAM MEMBER DETAILS -->
+        @if (item.type === 'MEMBER') {
+          <div class="profile-hero">
+            <div class="avatar-hero" [class.avatar-owner]="item.data.role === 'OWNER'" [class.avatar-admin]="item.data.role === 'ADMIN'">
+              {{ getInitials(item.data.fullName || ('User ' + item.data.userAccountId)) }}
+            </div>
+            <div class="hero-info">
+              <h2>{{ item.data.fullName || ('User Account #' + item.data.userAccountId) }}</h2>
+              <div class="hero-badges">
+                <span
+                  class="gcw-badge role-badge"
+                  [class.gcw-badge-warning]="item.data.role === 'OWNER'"
+                  [class.gcw-badge-info]="item.data.role === 'ADMIN'"
+                  [class.gcw-badge-neutral]="item.data.role === 'MEMBER'"
+                >
+                  {{ item.data.role }}
+                </span>
+                <span class="org-tag">{{ organization()?.name }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="details-spec-grid">
+            <div class="spec-card">
+              <span class="spec-label">Corporate Email</span>
+              <a href="mailto:{{ item.data.email }}" class="spec-val text-link">{{ item.data.email || 'Not provided' }}</a>
+            </div>
+            <div class="spec-card">
+              <span class="spec-label">Phone Number</span>
+              <span class="spec-val">{{ item.data.phone || '+1 (555) 000-0000' }}</span>
+            </div>
+            <div class="spec-card">
+              <span class="spec-label">User Account ID</span>
+              <span class="spec-val code-text">#{{ item.data.userAccountId }}</span>
+            </div>
+            <div class="spec-card">
+              <span class="spec-label">Date Joined</span>
+              <span class="spec-val">{{ item.data.addedAt | date: 'fullDate' }}</span>
+            </div>
+          </div>
+
+          <div class="permissions-box">
+            <h4>Portal Access &amp; Permissions</h4>
+            <div class="perm-list">
+              <div class="perm-item">
+                <span class="perm-check">✓</span>
+                <div class="perm-info">
+                  <strong>Fleet Overview &amp; Tracking</strong>
+                  <span>Can view all organization vehicles, active locations, and live service statuses.</span>
+                </div>
+              </div>
+              <div class="perm-item">
+                <span class="perm-check">✓</span>
+                <div class="perm-info">
+                  <strong>Wash Requests &amp; Booking</strong>
+                  <span>Authorized to initiate on-demand wash requests for fleet vehicles.</span>
+                </div>
+              </div>
+              <div class="perm-item" [class.perm-disabled]="item.data.role === 'MEMBER'">
+                <span class="perm-check">{{ item.data.role !== 'MEMBER' ? '✓' : '—' }}</span>
+                <div class="perm-info">
+                  <strong>Fleet Management &amp; Vehicle Assignments</strong>
+                  <span>{{ item.data.role !== 'MEMBER' ? 'Authorized to add, modify, and delete fleet vehicles.' : 'Restricted to administrators.' }}</span>
+                </div>
+              </div>
+              <div class="perm-item" [class.perm-disabled]="item.data.role === 'MEMBER'">
+                <span class="perm-check">{{ item.data.role !== 'MEMBER' ? '✓' : '—' }}</span>
+                <div class="perm-info">
+                  <strong>Billing, Invoices &amp; Payments</strong>
+                  <span>{{ item.data.role !== 'MEMBER' ? 'Full access to view payment history and settle balances.' : 'Restricted to administrators.' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- DRIVER DETAILS -->
+        @if (item.type === 'DRIVER') {
+          <div class="profile-hero">
+            <div class="avatar-hero avatar-driver">
+              {{ getInitials(item.data.fullName) }}
+            </div>
+            <div class="hero-info">
+              <h2>{{ item.data.fullName }}</h2>
+              <div class="hero-badges">
+                <span
+                  class="duty-badge"
+                  [class.duty-available]="item.data.status === 'AVAILABLE'"
+                  [class.duty-onroute]="item.data.status === 'ON_ROUTE'"
+                  [class.duty-offduty]="item.data.status === 'OFF_DUTY'"
+                >
+                  {{ item.data.status.replace('_', ' ') }}
+                </span>
+                <span class="license-tag">License: {{ item.data.licenseNumber }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="details-spec-grid">
+            <div class="spec-card">
+              <span class="spec-label">Contact Email</span>
+              <a href="mailto:{{ item.data.email }}" class="spec-val text-link">{{ item.data.email }}</a>
+            </div>
+            <div class="spec-card">
+              <span class="spec-label">Phone Number</span>
+              <span class="spec-val">{{ item.data.phone }}</span>
+            </div>
+            <div class="spec-card">
+              <span class="spec-label">Commercial License</span>
+              <span class="spec-val code-text">{{ item.data.licenseNumber }}</span>
+            </div>
+            <div class="spec-card">
+              <span class="spec-label">Total Completed Washes</span>
+              <span class="spec-val highlight-val">{{ item.data.totalWashesCompleted }} services</span>
+            </div>
+          </div>
+
+          <div class="assigned-vehicle-box">
+            <h4>Assigned Fleet Vehicle</h4>
+            @if (item.data.assignedVehicleLabel) {
+              <div class="vehicle-assigned-card">
+                <div class="veh-assigned-icon">🚗</div>
+                <div class="veh-assigned-meta">
+                  <strong>{{ item.data.assignedVehicleLabel }}</strong>
+                  <span>Designated Corporate Vehicle Operator</span>
+                </div>
+                <button
+                  type="button"
+                  class="gcw-btn gcw-btn-sm gcw-btn-secondary"
+                  (click)="openReassignModal(item.data)"
+                >
+                  Change Vehicle
+                </button>
+              </div>
+            } @else {
+              <div class="no-veh-card">
+                <p>No dedicated vehicle currently assigned to this driver.</p>
+                <button
+                  type="button"
+                  class="gcw-btn gcw-btn-sm gcw-btn-primary"
+                  (click)="openReassignModal(item.data)"
+                >
+                  + Assign Vehicle Now
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="status-quick-switch">
+            <h4>Quick Duty Status Update</h4>
+            <div class="duty-button-group">
+              <button
+                type="button"
+                class="duty-choice-btn"
+                [class.selected]="item.data.status === 'AVAILABLE'"
+                (click)="cycleDriverStatus(item.data)"
+              >
+                🟢 Available / On Duty
+              </button>
+              <button
+                type="button"
+                class="duty-choice-btn"
+                [class.selected]="item.data.status === 'ON_ROUTE'"
+                (click)="cycleDriverStatus(item.data)"
+              >
+                🟡 On Route
+              </button>
+              <button
+                type="button"
+                class="duty-choice-btn"
+                [class.selected]="item.data.status === 'OFF_DUTY'"
+                (click)="cycleDriverStatus(item.data)"
+              >
+                ⚪ Off Duty
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeDetailModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- REASSIGN VEHICLE MODAL -->
+@if (driverToReassign(); as driver) {
+  <div class="modal-backdrop" (click)="closeReassignModal()">
+    <div class="modal-card reassign-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="badge-modal-type">VEHICLE ASSIGNMENT</span>
+          <h3>Assign Vehicle to {{ driver.fullName }}</h3>
+        </div>
+        <button type="button" class="btn-modal-close" (click)="closeReassignModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-sub">Select which vehicle from the <strong>{{ organization()?.name }}</strong> fleet will be operated by this driver:</p>
+
+        <div class="gcw-field">
+          <label class="gcw-label" for="reassignSelect">Available Fleet Vehicles:</label>
+          <select
+            id="reassignSelect"
+            class="gcw-select"
+            [(ngModel)]="reassignVehicleSelect"
+          >
+            <option [ngValue]="null">-- None (Standby / Pool Driver) --</option>
+            @for (fv of fleetVehicles(); track fv.id) {
+              <option [ngValue]="fv.vehicleId">
+                🚗 {{ fv.label || ('Vehicle #' + fv.vehicleId) }}
+              </option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="gcw-btn gcw-btn-primary" (click)="confirmReassignVehicle()">
+          ✓ Confirm Assignment
+        </button>
+        <button type="button" class="gcw-btn gcw-btn-secondary" (click)="closeReassignModal()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+}

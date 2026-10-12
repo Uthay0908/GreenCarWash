@@ -1,0 +1,295 @@
+<div class="reports-page">
+  <div class="page-header">
+    <div>
+      <div class="badge-row">
+        <span class="report-badge">Business Intelligence</span>
+        <span class="live-dot">Live Gateway Feed</span>
+      </div>
+      <h1 class="page-title">Platform Analytics & Reports</h1>
+      <p class="page-subtitle">Track revenue, order financials, water conservation metrics, and customer eco-leaderboards.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="loadAllReports()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>
+        Refresh Data
+      </button>
+      <button class="btn btn-primary" (click)="downloadCsv()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Orders CSV
+      </button>
+    </div>
+  </div>
+
+  @if (toastMessage()) {
+    <div class="toast-banner">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Tab Navigation -->
+  <div class="tab-bar">
+    <button
+      class="tab-btn"
+      [class.active]="currentTab() === 'financial'"
+      (click)="setTab('financial')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Financial Revenue
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="currentTab() === 'orders-export'"
+      (click)="setTab('orders-export')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Orders & CSV Export
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="currentTab() === 'sustainability'"
+      (click)="setTab('sustainability')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+      Water & Sustainability
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="currentTab() === 'leaderboard'"
+      (click)="setTab('leaderboard')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+      Customer Eco Leaderboard
+    </button>
+  </div>
+
+  <!-- Tab 1: Financial Revenue -->
+  @if (currentTab() === 'financial') {
+    <div class="tab-content">
+      @if (revenue(); as rev) {
+        <div class="stats-grid">
+          <div class="kpi-card green-accent">
+            <div class="kpi-label">Gross Platform Revenue</div>
+            <div class="kpi-value">{{ rev.totalRevenue | currency:'USD' }}</div>
+            <div class="kpi-sub">Lifetime customer payments</div>
+          </div>
+          <div class="kpi-card teal-accent">
+            <div class="kpi-label">Net Platform Revenue</div>
+            <div class="kpi-value">{{ rev.netRevenue | currency:'USD' }}</div>
+            <div class="kpi-sub">Total Refunds: {{ rev.totalRefunds | currency:'USD' }}</div>
+          </div>
+          <div class="kpi-card blue-accent">
+            <div class="kpi-label">Estimated Washer Payouts</div>
+            <div class="kpi-value">{{ (rev.netRevenue * 0.8) | currency:'USD' }}</div>
+            <div class="kpi-sub">Net partner earnings (80% take)</div>
+          </div>
+          <div class="kpi-card purple-accent">
+            <div class="kpi-label">Completed Service Orders</div>
+            <div class="kpi-value">{{ rev.totalOrders | number }}</div>
+            <div class="kpi-sub">Avg ticket: {{ rev.averageOrderValue | currency:'USD' }}</div>
+          </div>
+        </div>
+
+        <div class="summary-details-card">
+          <h2 class="section-title">Revenue Distribution & Split Policy</h2>
+          <div class="split-bar-wrapper">
+            <div class="split-bar-fill washer-fill" style="width: 80%">Washer Direct (80%)</div>
+            <div class="split-bar-fill platform-fill" style="width: 20%">Fee (20%)</div>
+          </div>
+          <div class="policy-grid">
+            <div class="policy-item">
+              <span class="policy-label">Payment Gateway Status:</span>
+              <span class="policy-val font-green">Active (Stripe Connected)</span>
+            </div>
+            <div class="policy-item">
+              <span class="policy-label">Automatic Washer Settlement:</span>
+              <span class="policy-val">Every 48 Hours upon completion</span>
+            </div>
+            <div class="policy-item">
+              <span class="policy-label">Disputed Escrow Reserve:</span>
+              <span class="policy-val">$0.00</span>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="loading-state">Loading financial analytics...</div>
+      }
+    </div>
+  }
+
+  <!-- Tab 2: Orders & CSV Export -->
+  @if (currentTab() === 'orders-export') {
+    <div class="tab-content">
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <h2 class="card-title">Order Records Log</h2>
+            <p class="card-subtitle">Comprehensive ledger of platform wash jobs and their resource consumption.</p>
+          </div>
+          <button class="btn btn-secondary" (click)="downloadCsv()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download CSV
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Booking ID</th>
+                <th>Customer</th>
+                <th>Assigned Washer</th>
+                <th>Package</th>
+                <th>Amount</th>
+                <th>Water (Alloc / Used / Saved)</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ord of orders(); track ord.orderNumber) {
+                <tr>
+                  <td class="bold">#{{ ord.orderNumber }}</td>
+                  <td><code>{{ ord.bookingId }}</code></td>
+                  <td>{{ ord.customerName }}</td>
+                  <td>{{ ord.washerName }}</td>
+                  <td><span class="pkg-tag">{{ ord.packageName }}</span></td>
+                  <td class="bold font-green">{{ ord.totalAmount | currency:'USD' }}</td>
+                  <td>
+                    <span class="water-pill">{{ ord.waterAllocatedLiters }}L</span> /
+                    <span class="water-pill used">{{ ord.waterUsedLiters }}L</span> /
+                    <span class="water-pill saved">+{{ ord.waterSavedLiters }}L</span>
+                  </td>
+                  <td>
+                    <span class="status-pill" [class]="ord.status.toLowerCase()">{{ ord.status }}</span>
+                  </td>
+                  <td class="text-muted">{{ ord.bookingDate | date:'short' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Tab 3: Water & Sustainability -->
+  @if (currentTab() === 'sustainability') {
+    <div class="tab-content">
+      <div class="eco-hero">
+        <div class="eco-hero-header">
+          <div>
+            <span class="eco-chip">Environmental Impact Audit</span>
+            <h2 class="eco-title">Eco-Conservation Metrics</h2>
+          </div>
+          <div class="unit-selector">
+            <span class="unit-label">Display Unit:</span>
+            <button
+              class="unit-btn"
+              [class.active]="waterUnit === 'LITERS'"
+              (click)="changeWaterUnit('LITERS')">Liters</button>
+            <button
+              class="unit-btn"
+              [class.active]="waterUnit === 'GALLONS'"
+              (click)="changeWaterUnit('GALLONS')">Gallons</button>
+          </div>
+        </div>
+
+        @if (waterSavings(); as ws) {
+          <div class="stats-grid">
+            <div class="kpi-card teal-accent">
+              <div class="kpi-label">Cumulative Water Saved</div>
+              <div class="kpi-value">{{ ws.totalWaterSaved | number }} {{ ws.unit }}</div>
+              <div class="kpi-sub">vs traditional tunnel washes (300L avg)</div>
+            </div>
+            <div class="kpi-card green-accent">
+              <div class="kpi-label">Total Water Used</div>
+              <div class="kpi-value">{{ ws.totalWaterUsed | number }} {{ ws.unit }}</div>
+              <div class="kpi-sub">Total allocated: {{ ws.totalAllocated | number }} {{ ws.unit }}</div>
+            </div>
+            <div class="kpi-card blue-accent">
+              <div class="kpi-label">Efficiency Conservation Rate</div>
+              <div class="kpi-value">{{ ws.percentageSaved | number:'1.1-1' }}%</div>
+              <div class="kpi-sub">Water conserved under budget</div>
+            </div>
+          </div>
+        }
+
+        @if (sustainability(); as sus) {
+          <div class="sustainability-breakdown">
+            <div class="metric-box">
+              <div class="metric-icon">🌱</div>
+              <div class="metric-content">
+                <span class="metric-label">Estimated Carbon Offset</span>
+                <span class="metric-val">{{ sus.estimatedCo2SavedKg | number }} kg CO2e</span>
+                <span class="metric-desc">Derived from reduced municipal water delivery pumping energy.</span>
+              </div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-icon">🌳</div>
+              <div class="metric-content">
+                <span class="metric-label">Equivalent Trees Planted</span>
+                <span class="metric-val">{{ sus.equivalentTreesPlanted | number }} Trees</span>
+                <span class="metric-desc">Ecological equivalence of lifetime platform water savings.</span>
+              </div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-icon">🛡️</div>
+              <div class="metric-content">
+                <span class="metric-label">City Compliance Rating</span>
+                <span class="metric-val">100% Drought-Ready</span>
+                <span class="metric-desc">Certified under municipal drought emergency car wash standards.</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Tab 4: Customer Eco Leaderboard -->
+  @if (currentTab() === 'leaderboard') {
+    <div class="tab-content">
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <h2 class="card-title">Customer Eco Leaderboard</h2>
+            <p class="card-subtitle">Recognizing patrons who have saved the most fresh water through eco-wash services.</p>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Customer</th>
+                <th>Eco Tier</th>
+                <th>Washes Completed</th>
+                <th>Water Conserved</th>
+                <th>Reward Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of waterLeaderboard(); track item.customerProfileId) {
+                <tr>
+                  <td>
+                    <span class="rank-badge" [class.gold]="item.rank === 1" [class.silver]="item.rank === 2" [class.bronze]="item.rank === 3">
+                      #{{ item.rank }}
+                    </span>
+                  </td>
+                  <td class="bold">{{ item.customerName }}</td>
+                  <td>
+                    <span class="tier-badge" [class.champion]="item.rank === 1">
+                      {{ item.rank === 1 ? 'ECO CHAMPION' : (item.rank <= 3 ? 'ECO HERO' : 'ECO CONSERVER') }}
+                    </span>
+                  </td>
+                  <td>{{ item.completedWashesCount }} washes</td>
+                  <td class="bold font-green">{{ item.totalWaterSavedLiters | number }} Liters</td>
+                  <td><span class="status-pill active">Eco Credits Awarded</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+</div>

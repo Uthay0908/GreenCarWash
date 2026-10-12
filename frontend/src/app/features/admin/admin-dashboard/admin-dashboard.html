@@ -1,0 +1,304 @@
+<div class="admin-dashboard-page">
+  <!-- Page Header: Title, Real Date Range, Timeframe Dropdown, Refresh Action -->
+  <div class="dashboard-header-bar">
+    <div class="header-titles">
+      <div class="badge-row">
+        <span class="system-badge">System Operations</span>
+        <span class="live-dot">Telemetry &amp; Live Telematics</span>
+      </div>
+      <h1 class="page-title">Admin Dashboard</h1>
+      <p class="page-subtitle">Real-time system state, washer availability, platform revenue, and live booking telemetry.</p>
+    </div>
+
+    <div class="header-filters-row">
+      <!-- Date Picker Label -->
+      <div class="date-picker-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>{{ dateRangeLabel }}</span>
+      </div>
+
+      <!-- Timeframe Dropdown (Functional Real Filter) -->
+      <div class="select-box">
+        <select [ngModel]="selectedTimeframe" (ngModelChange)="onTimeframeChange($event)" class="time-select">
+          <option value="Today">Today</option>
+          <option value="Last 7 Days">Last 7 Days</option>
+          <option value="Last 30 Days">Last 30 Days</option>
+          <option value="This Month">This Month</option>
+          <option value="All Time">All Time</option>
+        </select>
+      </div>
+
+      <!-- Refresh Button -->
+      <button type="button" class="refresh-btn" (click)="refreshLiveMetrics()" title="Reload Real Dashboard Data">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+        </svg>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Operational Notice Banner for Pending KYC Washers -->
+  @if (pendingKycCount() > 0) {
+    <div class="admin-notice-banner warning">
+      <div class="notice-icon">⚠️</div>
+      <div class="notice-content">
+        <strong>Action Needed:</strong> {{ pendingKycCount() }} washer applicant(s) are awaiting KYC verification to accept jobs.
+      </div>
+      <a routerLink="/admin/washers" class="notice-action-btn">Review &amp; Approve Washers →</a>
+    </div>
+  }
+
+  <!-- Quick System Role Inspector Bar -->
+  <div class="admin-quick-inspect-bar">
+    <span class="inspect-title">System Role Inspector:</span>
+    <div class="inspect-chips-group">
+      <a routerLink="/admin/users" class="inspect-chip" title="Inspect registered customer profiles">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <span>Customers ({{ customerCount() }})</span>
+      </a>
+      <a routerLink="/admin/washers" class="inspect-chip" title="Inspect washer roster & KYC approval status">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Washers ({{ washerCount() }})</span>
+        @if (pendingKycCount() > 0) {
+          <span class="inspect-badge">{{ pendingKycCount() }} pending</span>
+        }
+      </a>
+      <a routerLink="/admin/bookings" class="inspect-chip" title="Inspect live service bookings and dispatch state">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+        <span>Bookings ({{ bookingCount() }})</span>
+      </a>
+      <a routerLink="/admin/organizations" class="inspect-chip" title="Inspect registered B2B corporate organizations">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
+        <span>Corporate Fleets ({{ fleetCount() }})</span>
+      </a>
+      <a routerLink="/admin/vehicles" class="inspect-chip" title="Inspect registered customer & fleet vehicles">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+        <span>Vehicles ({{ vehicleCount() }})</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- 4 Main KPI Stat Cards -->
+  <div class="kpi-quad-grid">
+    <!-- Customers -->
+    <div class="admin-kpi-card">
+      <div class="kpi-icon-square green-light">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-count">{{ customerCount() }}</span>
+        <span class="kpi-label">Registered Customers</span>
+      </div>
+    </div>
+
+    <!-- Washers -->
+    <div class="admin-kpi-card">
+      <div class="kpi-icon-square teal-light">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      </div>
+      <div class="kpi-info">
+        <div class="kpi-count-row">
+          <span class="kpi-count">{{ washerCount() }}</span>
+          @if (pendingKycCount() > 0) {
+            <span class="growth-chip warning">⚠️ {{ pendingKycCount() }} KYC</span>
+          } @else {
+            <span class="growth-chip positive">✓ Verified</span>
+          }
+        </div>
+        <span class="kpi-label">Washer Partners</span>
+      </div>
+    </div>
+
+    <!-- Total Bookings -->
+    <div class="admin-kpi-card">
+      <div class="kpi-icon-square orange-light">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-count">{{ bookingCount() }}</span>
+        <span class="kpi-label">Total System Bookings</span>
+      </div>
+    </div>
+
+    <!-- Revenue -->
+    <div class="admin-kpi-card">
+      <div class="kpi-icon-square blue-light">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div class="kpi-info">
+        <div class="kpi-count-row">
+          <span class="kpi-count">${{ revenueAmount() | number }}</span>
+        </div>
+        <div class="kpi-sub-row">
+          <span class="kpi-label">Net System Revenue</span>
+          <span class="growth-chip positive">Water Saved: {{ waterSavedAmount() | number }} L</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 1: Bookings Trend (Bar chart) + Service Status (Donut) + Service Areas (List) -->
+  <div class="mid-row-grid">
+    <!-- 1. Bookings Trend -->
+    <div class="dash-panel trend-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Bookings Trend</h2>
+        <span class="panel-pill">{{ selectedTimeframe }}</span>
+      </div>
+
+      <div class="bar-chart-container">
+        <div class="y-axis">
+          <span>Max</span>
+          <span>75%</span>
+          <span>50%</span>
+          <span>0</span>
+        </div>
+        <div class="bars-wrapper">
+          @for (d of trendDays(); track d.day) {
+            <div class="bar-group">
+              <div class="bar-fill" [style.height.%]="d.heightPercent" [title]="d.day + ': ' + d.count + ' bookings'"></div>
+              <span class="bar-lbl">{{ d.day }}</span>
+            </div>
+          } @empty {
+            <div class="empty-state-notice">No booking trend records in range.</div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Service Status (Donut Chart) -->
+    <div class="dash-panel status-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Service Status</h2>
+      </div>
+
+      <div class="donut-chart-wrapper">
+        <div class="donut-circle">
+          <div class="donut-hole">
+            <span class="hole-num">{{ bookingCount() }}</span>
+            <span class="hole-lbl">Bookings</span>
+          </div>
+        </div>
+
+        <div class="donut-legend">
+          <div class="legend-row">
+            <span class="dot-color completed-dot"></span>
+            <span class="legend-text">Completed ({{ completedCount() }})</span>
+            <strong class="legend-val">{{ completedPct() }}%</strong>
+          </div>
+          <div class="legend-row">
+            <span class="dot-color inprogress-dot"></span>
+            <span class="legend-text">In Progress ({{ inProgressCount() }})</span>
+            <strong class="legend-val">{{ inProgressPct() }}%</strong>
+          </div>
+          <div class="legend-row">
+            <span class="dot-color pending-dot"></span>
+            <span class="legend-text">Pending ({{ pendingCount() }})</span>
+            <strong class="legend-val">{{ pendingPct() }}%</strong>
+          </div>
+          <div class="legend-row">
+            <span class="dot-color cancelled-dot"></span>
+            <span class="legend-text">Cancelled ({{ cancelledCount() }})</span>
+            <strong class="legend-val">{{ cancelledPct() }}%</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Service Areas -->
+    <div class="dash-panel areas-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Active Service Hubs</h2>
+        <a routerLink="/admin/service-areas" class="panel-link">Manage →</a>
+      </div>
+
+      <div class="areas-list">
+        @for (a of serviceAreas(); track a.name) {
+          <div class="area-item">
+            <div class="area-name-row">
+              <span class="area-pin">📍</span>
+              <span class="area-name">{{ a.name }}</span>
+              <strong class="area-vol">Active</strong>
+            </div>
+            <div class="area-progress-bar">
+              <div class="area-progress-fill" [style.width.%]="100"></div>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-state-notice">
+            <span>No service hubs configured yet.</span>
+            <a routerLink="/admin/service-areas" class="empty-action-link">+ Configure Coverage Areas</a>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Service Breakdown (Donut) + Recent Bookings (Table) -->
+  <div class="bottom-row-grid">
+    <!-- Service Breakdown -->
+    <div class="dash-panel type-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Service Breakdown</h2>
+        <a routerLink="/admin/packages" class="panel-link">Packages →</a>
+      </div>
+
+      <div class="type-chart-wrapper">
+        <div class="type-donut-circle"></div>
+        <div class="type-legend">
+          @for (item of serviceBreakdown(); track item.name) {
+            <div class="legend-row">
+              <span class="dot-color" [class]="item.colorClass"></span>
+              <span class="legend-text">{{ item.name }} ({{ item.count }})</span>
+              <strong class="legend-val">{{ item.pct }}%</strong>
+            </div>
+          } @empty {
+            <div class="empty-state-notice">No service package bookings recorded for this period.</div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Bookings Table -->
+    <div class="dash-panel bookings-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Recent Operational Bookings</h2>
+        <a routerLink="/admin/bookings" class="panel-link">View All Bookings →</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="recent-table">
+          <thead>
+            <tr>
+              <th>Booking ID</th>
+              <th>Customer</th>
+              <th>Vehicle</th>
+              <th>Service</th>
+              <th>Status</th>
+              <th class="text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (b of recentBookings(); track b.id) {
+              <tr>
+                <td><code class="b-code">{{ b.id }}</code></td>
+                <td class="bold">{{ b.customerName }}</td>
+                <td>{{ b.vehicle }}</td>
+                <td><span class="service-tag">{{ b.service }}</span></td>
+                <td>
+                  <span class="status-pill" [class]="b.statusClass">
+                    {{ b.status }}
+                  </span>
+                </td>
+                <td class="bold font-green text-right">${{ b.amount }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="text-center py-4">No recent bookings recorded yet.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
