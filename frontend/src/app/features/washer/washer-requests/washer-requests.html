@@ -1,0 +1,264 @@
+<div class="washer-requests-container">
+  <!-- Toast Notification -->
+  @if (toastMessage()) {
+    <div class="toast-bar">
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Header Section -->
+  <div class="requests-header-row">
+    <div class="header-titles">
+      <div class="badge-requests-pill">
+        <span class="pulse-spark">⚡</span>
+        <span>REAL-TIME DISPATCH</span>
+      </div>
+      <h1 class="main-page-heading">Incoming Wash Requests</h1>
+      <p class="sub-page-text">Review and claim customer wash bookings in your active coverage zone.</p>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="filter-pills-row">
+      <button
+        type="button"
+        class="filter-pill"
+        [class.active]="activeFilter() === 'ALL'"
+        (click)="setFilter('ALL')">
+        All Requests ({{ allRequests().length }})
+      </button>
+      <button
+        type="button"
+        class="filter-pill"
+        [class.active]="activeFilter() === 'NEARBY'"
+        (click)="setFilter('NEARBY')">
+        📍 Nearby (≤ 5km)
+      </button>
+      <button
+        type="button"
+        class="filter-pill"
+        [class.active]="activeFilter() === 'HIGH_PAY'"
+        (click)="setFilter('HIGH_PAY')">
+        💰 High Payout (≥ $400)
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="requests-loading-state">
+      <div class="spinner"></div>
+      <p>Fetching active wash offers from dispatch server...</p>
+    </div>
+  }
+
+  <!-- Error State with Retry -->
+  @if (!loading() && errorMessage()) {
+    <div class="requests-error-card">
+      <span class="error-emoji">⚠️</span>
+      <h3 class="error-title">Failed to Load Wash Requests</h3>
+      <p class="error-desc">{{ errorMessage() }}</p>
+      <button type="button" class="btn-error-retry" (click)="loadRequests()">
+        <span>🔄 Retry Requests</span>
+      </button>
+    </div>
+  }
+
+  <!-- Main Requests Content -->
+  @if (!loading() && !errorMessage()) {
+    @if (isBusy()) {
+      <div class="busy-alert-banner">
+        <div class="busy-banner-icon">🔒</div>
+        <div class="busy-banner-text">
+          <h3>Currently Working on Job #GCW-{{ activeJob()?.bookingId }}</h3>
+          <p>You cannot accept another wash job while your current service is in progress ({{ activeJob()?.status }}). Complete your ongoing appointment to accept new requests.</p>
+        </div>
+        <a [routerLink]="['/washer/active-job', activeJob()?.bookingId]" class="btn-banner-active">Return to Active Job →</a>
+      </div>
+    }
+
+    @if (filteredRequests().length > 0) {
+      <div class="requests-cards-grid">
+        @for (req of paginatedRequests(); track req.bookingId) {
+          <div class="request-ticket-card" [class.expired-ticket]="req.isExpired">
+            <!-- Ticket Top -->
+            <div class="ticket-header">
+              <div class="ticket-id-tag">
+                <span class="id-hash">#GCW-{{ req.bookingId }}</span>
+                <span class="req-time-stamp">{{ req.requestTime }}</span>
+              </div>
+
+              <!-- Expiry Countdown Timer -->
+              <div class="ticket-countdown-pill" [class.urgent-pill]="req.remainingSeconds <= 30 && !req.isExpired">
+                @if (!req.isExpired) {
+                  <span class="timer-icon">⏳</span>
+                  <span class="timer-val">{{ req.formattedCountdown }}</span>
+                } @else {
+                  <span class="timer-expired-tag">EXPIRED</span>
+                }
+              </div>
+            </div>
+
+            <!-- Ticket Body -->
+            <div class="ticket-body">
+              <h3 class="ticket-pkg-name">{{ req.packageTitle }}</h3>
+
+              @if (req.addOnsList.length > 0) {
+                <div class="ticket-addons-tags">
+                  @for (addon of req.addOnsList; track addon) {
+                    <span class="addon-chip">+ {{ addon }}</span>
+                  }
+                </div>
+              }
+
+              <!-- Location & ETA Details -->
+              <div class="ticket-meta-grid">
+                <div class="meta-item">
+                  <span class="meta-icon">📍</span>
+                  <div class="meta-texts">
+                    <span class="meta-title">Distance / ETA</span>
+                    <strong class="meta-value">{{ req.distanceKm }} km • ~{{ req.etaMinutes }} mins</strong>
+                  </div>
+                </div>
+
+                <div class="meta-item">
+                  <span class="meta-icon">💬</span>
+                  <div class="meta-texts">
+                    <span class="meta-title">Customer Instructions</span>
+                    <strong class="meta-value text-truncate">{{ req.customerInstructions }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Financial Box -->
+              <div class="ticket-payout-box">
+                <div class="payout-left">
+                  <span class="payout-label">Your Estimated Payout</span>
+                  <span class="payout-note">Total Customer Bill: ${{ req.totalPrice }}</span>
+                </div>
+                <div class="payout-right">
+                  <span class="payout-amount-text">${{ req.payoutPrice }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ticket Actions -->
+            <div class="ticket-actions-row">
+              <button
+                type="button"
+                class="btn-reject-request"
+                [disabled]="actionInProgress()"
+                (click)="openRejectModal(req.bookingId)">
+                <span>REJECT</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-accept-request"
+                [disabled]="actionInProgress() || req.isExpired || isBusy()"
+                [title]="isBusy() ? 'You already have an active job in progress' : ''"
+                (click)="acceptRequest(req)">
+                <span>{{ actionInProgress() ? 'Accepting...' : (isBusy() ? 'CURRENTLY BUSY' : 'ACCEPT JOB') }}</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Pagination Controls -->
+      @if (totalPages() > 1) {
+        <div class="requests-pagination">
+          <button
+            type="button"
+            class="btn-page"
+            [disabled]="currentPage() === 1"
+            (click)="setPage(currentPage() - 1)">
+            ← Previous
+          </button>
+          <span class="page-count-text">Page {{ currentPage() }} of {{ totalPages() }}</span>
+          <button
+            type="button"
+            class="btn-page"
+            [disabled]="currentPage() === totalPages()"
+            (click)="setPage(currentPage() + 1)">
+            Next →
+          </button>
+        </div>
+      }
+    } @else {
+      <!-- EMPTY STATE -->
+      <div class="requests-empty-card">
+        <div class="empty-icon-circle">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <h3 class="empty-heading">No Wash Requests Available</h3>
+        <p class="empty-desc">
+          There are currently no offered bookings matching your filter. Stay online and ready in your service zone to receive new dispatched offers!
+        </p>
+        <button type="button" class="btn-refresh-offers" (click)="loadRequests()">
+          <span>🔄 Refresh Offers</span>
+        </button>
+      </div>
+    }
+  }
+
+  <!-- REJECTION REASON MODAL -->
+  @if (showRejectModal()) {
+    <div class="modal-backdrop" (click)="closeRejectModal()">
+      <div class="modal-dialog-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Decline Wash Request</h3>
+          <button type="button" class="modal-close-btn" (click)="closeRejectModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-subtext">Please select a reason for declining booking #{{ rejectingBookingId() }}:</p>
+
+          <div class="reason-radio-group">
+            <label class="radio-option">
+              <input type="radio" name="reason" value="Too far from current location" [(ngModel)]="rejectReason" />
+              <span>Too far from current location</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="reason" value="Vehicle or equipment issue" [(ngModel)]="rejectReason" />
+              <span>Vehicle or equipment issue</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="reason" value="Taking a scheduled break" [(ngModel)]="rejectReason" />
+              <span>Taking a scheduled break</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="reason" value="Customer location inaccessible" [(ngModel)]="rejectReason" />
+              <span>Customer location inaccessible</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="reason" value="Other" [(ngModel)]="rejectReason" />
+              <span>Other</span>
+            </label>
+          </div>
+
+          @if (rejectReason() === 'Other') {
+            <textarea
+              class="custom-reason-input"
+              rows="3"
+              placeholder="Please provide details..."
+              [(ngModel)]="rejectCustomReason">
+            </textarea>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="closeRejectModal()">Keep Request</button>
+          <button
+            type="button"
+            class="btn-modal-confirm-reject"
+            [disabled]="actionInProgress()"
+            (click)="confirmReject()">
+            Confirm Decline
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

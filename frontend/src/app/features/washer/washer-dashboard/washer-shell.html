@@ -1,0 +1,225 @@
+<div class="washer-layout">
+  <!-- Desktop & Tablet Sidebar -->
+  <aside class="washer-sidebar">
+    <div class="sidebar-top">
+      <div class="brand-header">
+        <div class="brand-logo-wrap">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L21.5 7.5V16.5L12 22L2.5 16.5V7.5L12 2Z" fill="#10b981" fill-opacity="0.25" stroke="#10b981" stroke-width="2"/>
+            <path d="M12 7C9.5 7 8 9.5 8 12C8 14.5 10 16 12 17C14 16 16 14.5 16 12C16 9.5 14.5 7 12 7Z" fill="#10b981"/>
+            <path d="M12 9V15" stroke="#064e3b" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <span class="brand-name">GreenCarWash</span>
+          <span class="portal-badge">WASHER PORTAL</span>
+        </div>
+      </div>
+
+      <!-- Live Online Toggle in Sidebar -->
+      <div class="sidebar-status-card" [class.is-online]="isOnline()" (click)="toggleOnline()" style="cursor: pointer;">
+        <div class="status-meta">
+          <span class="status-pulse-dot"></span>
+          <span class="status-title">{{ isOnline() ? 'ONLINE • AVAILABLE' : 'OFFLINE • ON BREAK' }}</span>
+        </div>
+        <button
+          type="button"
+          class="status-toggle-switch"
+          [attr.aria-label]="isOnline() ? 'Go Offline' : 'Go Online'"
+          (click)="$event.stopPropagation(); toggleOnline()">
+          <span class="toggle-track">
+            <span class="toggle-slider"></span>
+          </span>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        @for (link of navLinks; track link.path) {
+          <a
+            [routerLink]="link.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
+            class="nav-link">
+            <span class="nav-icon-wrap">
+              @if (link.icon === 'dashboard') {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+              } @else if (link.icon === 'event') {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              } @else if (link.icon === 'schedule') {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              } @else if (link.icon === 'payments') {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              } @else if (link.icon === 'verified_user') {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              } @else if (link.icon === 'notifications') {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              } @else if (link.icon === 'help') {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              } @else if (link.icon === 'leaderboard') {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><path d="M6 3h12v7a6 6 0 0 1-12 0V3z"/><path d="M9 21h6"/><path d="M12 16v5"/></svg>
+              } @else if (link.icon === 'reviews') {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              } @else {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+              }
+            </span>
+            <span class="nav-text">{{ link.label }}</span>
+            @if (link.path === '/washer/notifications' && unreadNotificationsCount() > 0) {
+              <span class="nav-badge">{{ unreadNotificationsCount() }}</span>
+            }
+          </a>
+        }
+      </nav>
+    </div>
+
+    <!-- Sidebar Bottom: Profile & Visible Logout Button -->
+    <div class="sidebar-bottom">
+      <div class="washer-profile-snippet">
+        <div class="profile-avatar">{{ washerAvatar() }}</div>
+        <div class="profile-meta">
+          <strong class="profile-name">{{ washerName() }}</strong>
+          <span class="profile-rating">⭐ {{ washerRating() | number:'1.1-2' }} Partner</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="sidebar-logout-btn"
+        (click)="onLogout()"
+        [disabled]="loggingOut()"
+        title="Sign out of Washer Portal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span>{{ loggingOut() ? 'Signing out...' : 'Sign Out' }}</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Layout Content Area -->
+  <div class="washer-main-area">
+    <!-- Top Responsive Header -->
+    <header class="washer-header">
+      <div class="header-left">
+        <div class="mobile-brand">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L21.5 7.5V16.5L12 22L2.5 16.5V7.5L12 2Z" fill="#10b981" fill-opacity="0.3" stroke="#10b981" stroke-width="2"/>
+            <path d="M12 7C9.5 7 8 9.5 8 12C8 14.5 10 16 12 17C14 16 16 14.5 16 12C16 9.5 14.5 7 12 7Z" fill="#10b981"/>
+          </svg>
+          <span class="mobile-brand-name">GreenCarWash</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Live status pill -->
+        <button
+          type="button"
+          class="header-status-pill"
+          [class.online]="isOnline()"
+          (click)="toggleOnline()">
+          <span class="pill-dot"></span>
+          <span class="pill-text">{{ isOnline() ? 'Online' : 'Offline' }}</span>
+        </button>
+
+        <!-- Notifications link with live badge -->
+        <a routerLink="/washer/notifications" class="header-alert-btn" title="Notifications Center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          @if (unreadNotificationsCount() > 0) {
+            <span class="alert-count">{{ unreadNotificationsCount() }}</span>
+          }
+        </a>
+
+        <!-- Support shortcut link -->
+        <a routerLink="/washer/support" class="header-alert-btn" title="Help & Support">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </a>
+
+        <!-- Header Logout Button -->
+        <button
+          type="button"
+          class="header-logout-btn"
+          (click)="onLogout()"
+          [disabled]="loggingOut()"
+          title="Sign out">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          <span class="hide-mobile">Sign Out</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Router View Container -->
+    <main class="washer-content-body">
+      <router-outlet />
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="washer-mobile-bottom-bar">
+      @for (item of mobileNav; track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+          class="mobile-nav-item">
+          <div class="mobile-icon-wrap">
+            @if (item.icon === 'dashboard') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+            } @else if (item.icon === 'bolt') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              @if (pendingOffersCount() > 0) {
+                <span class="mobile-badge">{{ pendingOffersCount() }}</span>
+              }
+            } @else if (item.icon === 'event') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            } @else if (item.icon === 'payments') {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            } @else {
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+            }
+          </div>
+          <span class="mobile-nav-label">{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  </div>
+
+  <!-- Logout Confirmation Modal (Step 11) -->
+  @if (showLogoutConfirm()) {
+    <div class="gcw-modal-backdrop" (click)="cancelLogout()">
+      <div class="gcw-modal-card logout-modal-card" (click)="$event.stopPropagation()">
+        <div class="logout-modal-header">
+          <div class="logout-icon-wrap">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="logout-modal-title">Are you sure you want to log out?</h3>
+            <p class="logout-modal-sub">You will be signed out of your Washer portal and will not receive new wash requests until you sign in again.</p>
+          </div>
+        </div>
+        <div class="logout-modal-actions">
+          <button type="button" class="btn-cancel" (click)="cancelLogout()">Cancel</button>
+          <button type="button" class="btn-confirm-logout" (click)="confirmLogout()" [disabled]="loggingOut()">
+            {{ loggingOut() ? 'Signing out...' : 'Log Out' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

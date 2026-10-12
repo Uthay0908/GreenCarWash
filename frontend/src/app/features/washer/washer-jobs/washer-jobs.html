@@ -1,0 +1,225 @@
+<div class="washer-jobs-container">
+  <!-- Header Row -->
+  <div class="jobs-header-row">
+    <div class="header-titles">
+      <div class="badge-jobs-pill">
+        <span>📅 BOOKING LEDGER</span>
+      </div>
+      <h1 class="main-page-heading">My Wash Jobs</h1>
+      <p class="sub-page-text">Track your live ongoing jobs, service history, and completed customer bookings.</p>
+    </div>
+
+    <!-- Search Input -->
+    <div class="search-input-wrapper">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input
+        type="text"
+        class="search-field"
+        placeholder="Search by ID, package, note..."
+        [(ngModel)]="searchQuery" />
+    </div>
+  </div>
+
+  <!-- Tabs Row -->
+  <div class="jobs-tabs-nav">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'ONGOING'"
+      (click)="setTab('ONGOING')">
+      <span>Ongoing</span>
+      <span class="tab-badge bg-blue">{{ ongoingCount() }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'COMPLETED'"
+      (click)="setTab('COMPLETED')">
+      <span>Completed</span>
+      <span class="tab-badge bg-emerald">{{ completedCount() }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'CANCELLED'"
+      (click)="setTab('CANCELLED')">
+      <span>Cancelled</span>
+      <span class="tab-badge bg-red">{{ cancelledCount() }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'ALL'"
+      (click)="setTab('ALL')">
+      <span>All Jobs</span>
+      <span class="tab-badge bg-gray">{{ allJobs().length }}</span>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="jobs-loading-state">
+      <div class="spinner"></div>
+      <p>Loading your assigned bookings from database...</p>
+    </div>
+  }
+
+  <!-- Error State with Retry -->
+  @if (!loading() && errorMessage()) {
+    <div class="jobs-error-card">
+      <span class="error-emoji">⚠️</span>
+      <h3 class="error-title">Could Not Load Bookings</h3>
+      <p class="error-desc">{{ errorMessage() }}</p>
+      <button type="button" class="btn-error-retry" (click)="loadJobs()">
+        <span>🔄 Retry</span>
+      </button>
+    </div>
+  }
+
+  <!-- Content State -->
+  @if (!loading() && !errorMessage()) {
+    @if (filteredJobs().length > 0) {
+      <div class="jobs-list-grid">
+        @for (job of paginatedJobs(); track job.id) {
+          <div class="job-item-card" [class.ongoing-card]="job.status === 'ONGOING'">
+            <!-- Card Header -->
+            <div class="card-header-bar">
+              <div class="job-ref-block">
+                <strong class="job-ref-text">{{ job.bookingRef }}</strong>
+                <span class="job-date-text">{{ job.formattedDate }}</span>
+              </div>
+
+              <!-- Status Badge -->
+              <div class="status-pill-badge" [ngClass]="{
+                'status-ongoing': job.status === 'ONGOING',
+                'status-completed': job.status === 'COMPLETED',
+                'status-cancelled': job.status === 'CANCELLED'
+              }">
+                @if (job.status === 'ONGOING') {
+                  <span class="pulse-indicator"></span>
+                }
+                <span>{{ job.rawStatus }}</span>
+              </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body-content">
+              <h3 class="job-title-text">{{ job.packageTitle }}</h3>
+
+              @if (job.addOnsText) {
+                <div class="job-addons-line">
+                  <span class="addon-icon">✨</span>
+                  <span>{{ job.addOnsText }}</span>
+                </div>
+              }
+
+              <!-- Customer Instruction -->
+              <div class="job-instruction-quote">
+                <span class="quote-label">Notes:</span>
+                <p class="quote-text">{{ job.customerInstructions }}</p>
+              </div>
+
+              <!-- Checklist Progress if tasks exist -->
+              @if (job.checklistTotal > 0) {
+                <div class="checklist-progress-bar-wrap">
+                  <div class="progress-labels">
+                    <span>Quality Checklist</span>
+                    <strong>{{ job.checklistCompleted }}/{{ job.checklistTotal }} done</strong>
+                  </div>
+                  <div class="progress-track">
+                    <div
+                      class="progress-fill"
+                      [style.width.%]="(job.checklistCompleted / job.checklistTotal) * 100">
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- Financial Summary -->
+              <div class="job-financial-strip">
+                <div class="fin-block">
+                  <span class="fin-label">Customer Total</span>
+                  <span class="fin-val">${{ job.totalAmount }}</span>
+                </div>
+                <div class="fin-block fin-highlight">
+                  <span class="fin-label">Your Payout</span>
+                  <strong class="fin-val payout-green">${{ job.payoutAmount }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="card-actions-footer">
+              @if (job.status === 'ONGOING') {
+                <button type="button" class="btn-action-job btn-continue-job" (click)="openActiveJob(job.id)">
+                  <span>🧼 Open Service Workflow →</span>
+                </button>
+              } @else {
+                <div class="completed-action-row">
+                  <span class="record-final-badge">
+                    {{ job.status === 'COMPLETED' ? '✓ Completed' : '✕ Cancelled' }}
+                  </span>
+                  <button type="button" class="btn-action-job btn-view-details" (click)="openActiveJob(job.id)">
+                    <span>View Details →</span>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Pagination -->
+      @if (totalPages() > 1) {
+        <div class="jobs-pagination">
+          <button
+            type="button"
+            class="btn-page"
+            [disabled]="currentPage() === 1"
+            (click)="setPage(currentPage() - 1)">
+            ← Previous
+          </button>
+          <span class="page-count-text">Page {{ currentPage() }} of {{ totalPages() }}</span>
+          <button
+            type="button"
+            class="btn-page"
+            [disabled]="currentPage() === totalPages()"
+            (click)="setPage(currentPage() + 1)">
+            Next →
+          </button>
+        </div>
+      }
+    } @else {
+      <!-- EMPTY STATE -->
+      <div class="jobs-empty-state">
+        <div class="empty-icon-bubble">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        <h3 class="empty-title">No {{ activeTab() !== 'ALL' ? activeTab().toLowerCase() : '' }} jobs found</h3>
+        <p class="empty-desc">
+          @if (activeTab() === 'ONGOING') {
+            You have no active or in-progress jobs right now. Check incoming wash requests to claim new bookings!
+          } @else if (activeTab() === 'COMPLETED') {
+            No completed bookings yet. As you finish wash jobs, they will appear in this verified ledger.
+          } @else if (activeTab() === 'CANCELLED') {
+            Great job! You don't have any cancelled wash bookings.
+          } @else {
+            No jobs found matching your criteria.
+          }
+        </p>
+        <div class="empty-actions-row">
+          <a routerLink="/washer/requests" class="btn-empty-cta">View New Requests →</a>
+          <button type="button" class="btn-empty-refresh" (click)="loadJobs()">Refresh Ledger</button>
+        </div>
+      </div>
+    }
+  }
+</div>

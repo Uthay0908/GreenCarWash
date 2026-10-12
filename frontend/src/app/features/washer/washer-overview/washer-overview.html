@@ -1,0 +1,465 @@
+<div class="washer-overview-page">
+  <!-- Toast Notification -->
+  @if (toastMessage()) {
+    <div class="overview-toast-bar">
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="overview-loading-container">
+      <div class="eco-spinner"></div>
+      <p class="loading-label">Connecting to Washer Portal & Loading Real-Time Data...</p>
+    </div>
+  }
+
+  <!-- Error State with Retry -->
+  @if (!loading() && errorMessage()) {
+    <div class="overview-error-card">
+      <div class="error-icon">⚠️</div>
+      <h3 class="error-heading">Portal Connection Error</h3>
+      <p class="error-text">{{ errorMessage() }}</p>
+      <button type="button" class="btn-retry" (click)="loadCatalogAndData()">
+        <span>🔄 Retry Connection</span>
+      </button>
+    </div>
+  }
+
+  @if (!loading() && !errorMessage()) {
+    <!-- TOP WASHER PROFILE & AVAILABILITY HEADER -->
+    <div class="overview-header-bar">
+      <div class="washer-user-info">
+        <div class="washer-avatar-circle">
+          <span>{{ washerAvatar() }}</span>
+        </div>
+        <div class="washer-welcome-block">
+          <h1 class="welcome-heading">Welcome, {{ washerName() }}!</h1>
+          <div class="location-tag">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>{{ washerLocation() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real Online / Offline Toggle Switch -->
+      <div class="header-toggle-container">
+        <div class="online-switch-wrap" [class.active-online]="isOnline()">
+          <div class="switch-status-label">
+            <span class="status-indicator-dot"></span>
+            <span class="status-name">{{ isOnline() ? 'ONLINE' : 'OFFLINE' }}</span>
+          </div>
+          <button
+            type="button"
+            class="switch-control-btn"
+            [disabled]="actionInProgress()"
+            (click)="toggleOnline()"
+            [attr.aria-label]="isOnline() ? 'Go Offline' : 'Go Online'">
+            <span class="switch-track">
+              <span class="switch-knob"></span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 STATISTICAL METRIC CARDS -->
+    <div class="stats-metrics-grid">
+      <!-- 1. Today's Jobs -->
+      <div class="metric-card card-jobs">
+        <div class="metric-top">
+          <span class="metric-label">Today's Jobs</span>
+          <div class="metric-icon-bubble bg-blue-subtle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+        </div>
+        <strong class="metric-value">{{ todayJobsCount() }}</strong>
+        <span class="metric-footnote text-blue">Washes scheduled/completed</span>
+      </div>
+
+      <!-- 2. Today's Earnings -->
+      <div class="metric-card card-earnings">
+        <div class="metric-top">
+          <span class="metric-label">Today's Earnings</span>
+          <div class="metric-icon-bubble bg-emerald-subtle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          </div>
+        </div>
+        <strong class="metric-value">${{ todayEarnings() }}</strong>
+        <span class="metric-footnote text-emerald">70% partner payout share</span>
+      </div>
+
+      <!-- 3. Rating -->
+      <div class="metric-card card-rating">
+        <div class="metric-top">
+          <span class="metric-label">Rating</span>
+          <div class="metric-icon-bubble bg-amber-subtle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+        </div>
+        <strong class="metric-value">{{ averageRating() | number:'1.1-2' }} ⭐</strong>
+        <span class="metric-footnote text-amber">Customer satisfaction score</span>
+      </div>
+
+      <!-- 4. Completion / On-Time -->
+      <div class="metric-card card-completion">
+        <div class="metric-top">
+          <span class="metric-label">Completion / On-Time</span>
+          <div class="metric-icon-bubble bg-purple-subtle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+        </div>
+        <strong class="metric-value">{{ completionRate() }}%</strong>
+        <span class="metric-footnote text-purple">SLA acceptance rate</span>
+      </div>
+
+      <!-- 5. Total Washes -->
+      <div class="metric-card card-total">
+        <div class="metric-top">
+          <span class="metric-label">Total Washes</span>
+          <div class="metric-icon-bubble bg-teal-subtle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          </div>
+        </div>
+        <strong class="metric-value">{{ totalWashes() }}</strong>
+        <span class="metric-footnote text-teal">Completed lifetime jobs</span>
+      </div>
+    </div>
+
+    <!-- CURRENT JOB SECTION -->
+    <section class="section-card-wrapper">
+      <div class="section-header-row">
+        <h2 class="section-heading">Current Active Job</h2>
+        @if (activeJob()) {
+          <span class="badge-status-glow">CURRENTLY WORKING • {{ activeJob()?.status }}</span>
+        }
+      </div>
+
+      @if (activeJob(); as job) {
+        <!-- ACTIVE JOB CARD -->
+        <div class="current-job-card active-border">
+          <div class="job-card-top">
+            <div class="job-id-pill">
+              <span class="dot-live-pulse"></span>
+              <strong>#GCW-{{ job.bookingId }}</strong>
+            </div>
+            <div class="job-payout-badge">
+              <span class="payout-label">Payout:</span>
+              <strong class="payout-val">${{ job.payoutAmount }}</strong>
+            </div>
+          </div>
+
+          <div class="job-card-main-grid">
+            <div class="job-info-col">
+              <h3 class="job-package-name">{{ job.packageTitle }}</h3>
+              @if (job.addOnsText) {
+                <div class="job-addons-line">
+                  <span class="addon-icon">✨</span>
+                  <span>{{ job.addOnsText }}</span>
+                </div>
+              }
+              <div class="job-instructions-box">
+                <span class="inst-label">Customer Instructions:</span>
+                <p class="inst-content">{{ job.customerInstructions }}</p>
+              </div>
+            </div>
+
+            <div class="job-eta-col">
+              <div class="eta-pill">
+                <span class="eta-icon">⏱️</span>
+                <span class="eta-text">ETA: {{ job.etaMinutes }} min away</span>
+              </div>
+              <div class="job-status-flow">
+                <span class="flow-label">Current Stage:</span>
+                <span class="flow-val">{{ job.status }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DYNAMIC ACTION BUTTONS VALID FOR BACKEND STATUS -->
+          <div class="job-card-actions-bar">
+            <!-- Navigate button -->
+            <button type="button" class="btn-action btn-navigate" (click)="openDirections()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              <span>Navigate</span>
+            </button>
+
+            <!-- Call / Message button -->
+            <a href="tel:+919876543210" class="btn-action btn-contact">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>Call Customer</span>
+            </a>
+
+            <!-- Status specific progression buttons -->
+            @if (job.status === 'ACCEPTED') {
+              <button
+                type="button"
+                class="btn-action btn-primary-accent"
+                [disabled]="actionInProgress()"
+                (click)="markOnTheWay(job.bookingId)">
+                <span>🚗 Mark On The Way</span>
+              </button>
+            } @else if (job.status === 'ON_THE_WAY') {
+              <button
+                type="button"
+                class="btn-action btn-primary-accent"
+                [disabled]="actionInProgress()"
+                (click)="markArrived(job.bookingId)">
+                <span>📍 Mark Arrived</span>
+              </button>
+            } @else if (job.status === 'ARRIVED') {
+              <button
+                type="button"
+                class="btn-action btn-primary-accent"
+                [disabled]="actionInProgress()"
+                (click)="markStartWash(job.bookingId)">
+                <span>🚿 Start Wash Service</span>
+              </button>
+            } @else {
+              <!-- IN_PROGRESS -->
+              <button
+                type="button"
+                class="btn-action btn-primary-accent"
+                (click)="openWorkflow()">
+                <span>🧼 Continue Service Workflow →</span>
+              </button>
+            }
+          </div>
+        </div>
+      } @else {
+        <!-- NO CURRENT JOB CARD -->
+        <div class="no-active-job-card">
+          <div class="empty-wash-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <h3 class="no-job-title">No active wash</h3>
+          <p class="no-job-subtitle">Stay online to receive new wash requests in your service area.</p>
+
+          @if (!isOnline()) {
+            <button
+              type="button"
+              class="btn-go-online"
+              (click)="toggleOnline(true)">
+              <span class="go-online-dot"></span>
+              <span>GO ONLINE</span>
+            </button>
+          } @else {
+            <div class="online-listening-radar">
+              <span class="radar-ping"></span>
+              <span class="radar-text">🟢 Online & listening for requests...</span>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <!-- NEW WASH REQUESTS SECTION (ON DASHBOARD) -->
+    <section class="section-card-wrapper">
+      <div class="section-header-row">
+        <div class="header-with-badge">
+          <h2 class="section-heading">New Wash Requests</h2>
+          @if (!isBusy() && pendingRequests().length > 0) {
+            <span class="requests-counter-badge">{{ pendingRequests().length }} Available</span>
+          }
+        </div>
+        @if (!isBusy()) {
+          <a routerLink="/washer/requests" class="link-view-all">View All Requests →</a>
+        }
+      </div>
+
+      @if (isBusy()) {
+        <div class="busy-partner-notice">
+          <div class="busy-icon">🔒</div>
+          <div class="busy-info">
+            <h4 class="busy-title">Currently Servicing Job #GCW-{{ activeJob()?.bookingId }}</h4>
+            <p class="busy-desc">You are actively assigned to a wash appointment ({{ activeJob()?.status }}). New request acceptance is paused until your current job is completed.</p>
+          </div>
+          <a [routerLink]="['/washer/active-job', activeJob()?.bookingId]" class="btn-go-active-job">Return to Active Job →</a>
+        </div>
+      } @else if (pendingRequests().length > 0) {
+        <div class="requests-grid">
+          @for (req of pendingRequests(); track req.bookingId) {
+            <div class="request-offer-card" [class.expired-card]="req.isExpired">
+              <div class="request-card-header">
+                <div class="req-id-tag">
+                  <span>#GCW-{{ req.bookingId }}</span>
+                </div>
+                <div class="req-timer-badge" [class.urgent]="req.remainingSeconds <= 30 && !req.isExpired">
+                  @if (!req.isExpired) {
+                    <span class="timer-clock-icon">⏳</span>
+                    <span class="timer-digits">{{ req.formattedCountdown }}</span>
+                  } @else {
+                    <span class="timer-expired">EXPIRED</span>
+                  }
+                </div>
+              </div>
+
+              <div class="request-card-body">
+                <h4 class="request-pkg-title">{{ req.packageTitle }}</h4>
+                @if (req.addOnsText) {
+                  <p class="request-addons-line">+ {{ req.addOnsText }}</p>
+                }
+
+                <div class="req-details-list">
+                  <div class="req-detail-row">
+                    <span class="detail-icon">📍</span>
+                    <span class="detail-val">Nearby • {{ req.etaMinutes }} min ETA</span>
+                  </div>
+                  <div class="req-detail-row">
+                    <span class="detail-icon">💬</span>
+                    <span class="detail-val">{{ req.instructions }}</span>
+                  </div>
+                </div>
+
+                <div class="req-payout-box">
+                  <div style="display: flex; flex-direction: column;">
+                    <span class="payout-desc">Estimated Partner Payout</span>
+                    @if (req.totalAmount > 0) {
+                      <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">Customer Bill: ${{ req.totalAmount }} (70% share)</span>
+                    }
+                  </div>
+                  <strong class="payout-price">${{ req.payoutAmount }}</strong>
+                </div>
+              </div>
+
+              <div class="request-card-actions">
+                <button
+                  type="button"
+                  class="btn-reject"
+                  [disabled]="actionInProgress()"
+                  (click)="openRejectModal(req.bookingId)">
+                  <span>REJECT</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-accept"
+                  [disabled]="actionInProgress() || req.isExpired"
+                  (click)="acceptRequest(req)">
+                  <span>ACCEPT</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-requests-banner">
+          <span class="banner-icon">⚡</span>
+          <div class="banner-text">
+            <strong>No pending requests right now</strong>
+            <p>{{ isOnline() ? 'You will be notified immediately when a new order is dispatched to your zone.' : 'Go online to start receiving customer bookings.' }}</p>
+          </div>
+          @if (!isOnline()) {
+            <button type="button" class="btn-banner-online" (click)="toggleOnline(true)">Go Online</button>
+          }
+        </div>
+      }
+    </section>
+
+    <!-- WASHER OPERATIONS HUB LINKS -->
+    <section class="section-card-wrapper">
+      <div class="section-header-row">
+        <h2 class="section-heading">Washer Operations Hub</h2>
+      </div>
+
+      <div class="operations-links-grid">
+        <a routerLink="/washer/requests" class="hub-item-card">
+          <div class="hub-icon bg-emerald-subtle">⚡</div>
+          <div class="hub-body">
+            <h4 class="hub-title">Incoming Requests</h4>
+            <p class="hub-desc">Review and accept customer wash requests nearby</p>
+          </div>
+          <span class="hub-arrow">→</span>
+        </a>
+
+        <a routerLink="/washer/jobs" class="hub-item-card">
+          <div class="hub-icon bg-blue-subtle">📅</div>
+          <div class="hub-body">
+            <h4 class="hub-title">My Jobs</h4>
+            <p class="hub-desc">Browse ongoing, completed and cancelled wash history</p>
+          </div>
+          <span class="hub-arrow">→</span>
+        </a>
+
+        <a routerLink="/washer/earnings" class="hub-item-card">
+          <div class="hub-icon bg-amber-subtle">💰</div>
+          <div class="hub-body">
+            <h4 class="hub-title">Earnings & Payouts</h4>
+            <p class="hub-desc">Check balances, daily revenue and bank payout history</p>
+          </div>
+          <span class="hub-arrow">→</span>
+        </a>
+
+        <a routerLink="/washer/kyc" class="hub-item-card">
+          <div class="hub-icon bg-purple-subtle">📋</div>
+          <div class="hub-body">
+            <h4 class="hub-title">KYC & Documents</h4>
+            <p class="hub-desc">Verify driving licence, government ID and partner tier</p>
+          </div>
+          <span class="hub-arrow">→</span>
+        </a>
+      </div>
+    </section>
+  }
+
+  <!-- REJECTION REASON MODAL -->
+  @if (showRejectModal()) {
+    <div class="modal-backdrop" (click)="closeRejectModal()">
+      <div class="modal-dialog-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Decline Wash Request</h3>
+          <button type="button" class="modal-close-btn" (click)="closeRejectModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-subtext">Please select a reason for declining request #{{ rejectingBookingId() }}:</p>
+
+          <div class="reason-radio-group">
+            <label class="radio-option">
+              <input type="radio" name="reason" value="Too far from current location" [(ngModel)]="rejectReason" />
+              <span>Too far from current location</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="reason" value="Vehicle or equipment issue" [(ngModel)]="rejectReason" />
+              <span>Vehicle or equipment issue</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="reason" value="Taking a scheduled break" [(ngModel)]="rejectReason" />
+              <span>Taking a scheduled break</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="reason" value="Customer location inaccessible" [(ngModel)]="rejectReason" />
+              <span>Customer location inaccessible</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="reason" value="Other" [(ngModel)]="rejectReason" />
+              <span>Other</span>
+            </label>
+          </div>
+
+          @if (rejectReason() === 'Other') {
+            <textarea
+              class="custom-reason-input"
+              rows="3"
+              placeholder="Please provide details..."
+              [(ngModel)]="rejectCustomReason">
+            </textarea>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="closeRejectModal()">Keep Request</button>
+          <button
+            type="button"
+            class="btn-modal-confirm-reject"
+            [disabled]="actionInProgress()"
+            (click)="confirmReject()">
+            Confirm Decline
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

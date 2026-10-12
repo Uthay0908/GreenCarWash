@@ -1,0 +1,369 @@
+<div class="washer-profile-container">
+  <!-- Page Header -->
+  <div class="page-title-row">
+    <div>
+      <div class="breadcrumb-row">
+        <a routerLink="/washer" class="crumb-link">Dashboard</a>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-current">Profile & Settings</span>
+      </div>
+      <h1 class="main-heading">Partner Profile & Operations</h1>
+      <p class="sub-heading">Performance analytics, capabilities, direct deposit banking, and operating zone.</p>
+    </div>
+  </div>
+
+  @if (toastMessage()) {
+    <div class="toast-bar">
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="profile-loading-state">
+      <div class="spinner"></div>
+      <p>Loading washer profile and operational credentials...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (!loading() && errorMessage()) {
+    <div class="profile-error-card">
+      <span class="error-emoji">⚠️</span>
+      <h3 class="error-title">Could Not Load Profile</h3>
+      <p class="error-desc">{{ errorMessage() }}</p>
+      <button type="button" class="btn-error-retry" (click)="loadAllProfileData()">
+        <span>🔄 Retry</span>
+      </button>
+    </div>
+  }
+
+  <!-- Content State -->
+  @if (!loading() && profile()) {
+    <div class="profile-cards-stack">
+      <!-- 1. Hero Profile Card -->
+      <div class="profile-hero-card">
+        <div class="hero-left">
+          <div class="hero-avatar">
+            {{ (profile()?.fullName || 'W').charAt(0).toUpperCase() }}
+          </div>
+          <div class="hero-meta">
+            <div class="hero-name-row">
+              <h2 class="hero-name">{{ profile()?.fullName }}</h2>
+              <span class="partner-badge">Partner #{{ profile()?.id }}</span>
+              <span class="immutable-tag" title="Washer identity is officially registered and strictly immutable post-registration">🔒 Read-Only Name</span>
+            </div>
+            <div class="hero-contact-row">
+              <span class="contact-item">📧 {{ profile()?.email }}</span>
+              <span class="contact-item">📱 {{ profile()?.phone }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-badges-col">
+          <div class="hero-rating-pill">
+            <span class="star-icon">★</span>
+            <strong>{{ profile()?.averageRating | number:'1.1-2' }}</strong>
+            <span class="rating-sub">/ 5.0 Rating</span>
+          </div>
+
+          <div class="status-tags-row">
+            <!-- KYC Badge -->
+            <span class="kyc-badge" [ngClass]="{
+              'kyc-approved': profile()?.kycStatus === 'APPROVED',
+              'kyc-pending': profile()?.kycStatus === 'PENDING',
+              'kyc-rejected': profile()?.kycStatus === 'REJECTED'
+            }">
+              {{ profile()?.kycStatus === 'APPROVED' ? '✓ KYC Verified' : (profile()?.kycStatus === 'PENDING' ? '⏳ KYC In Review' : '⚠️ KYC Pending') }}
+            </span>
+
+            <!-- Online Badge -->
+            <span class="online-pill" [class.is-online]="availability()?.online">
+              <span class="dot"></span>
+              {{ availability()?.online ? 'Online' : 'Offline' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Performance Metrics (STEP 3) -->
+      <div class="settings-card">
+        <div class="card-header-bar">
+          <div>
+            <h2 class="card-title">Performance & Quality Ratings</h2>
+            <p class="card-sub">Real-time dispatch metrics tracked by the service platform.</p>
+          </div>
+        </div>
+
+        <div class="perf-metrics-grid">
+          <div class="perf-card">
+            <span class="perf-label">Partner Rating</span>
+            <strong class="perf-val text-amber">★ {{ performance()?.averageRating || profile()?.averageRating || 5.0 | number:'1.1-2' }}</strong>
+            <span class="perf-sub">Based on verified customer reviews</span>
+          </div>
+
+          <div class="perf-card">
+            <span class="perf-label">Acceptance Rate</span>
+            <strong class="perf-val text-emerald">
+              {{ ((performance()?.acceptanceRate ?? 1) * 100) | number:'1.0-0' }}%
+            </strong>
+            <span class="perf-sub">{{ performance()?.acceptedCount ?? 0 }} of {{ performance()?.offeredCount ?? 0 }} offers accepted</span>
+          </div>
+
+          <div class="perf-card">
+            <span class="perf-label">Completion Rate</span>
+            <strong class="perf-val text-blue">100%</strong>
+            <span class="perf-sub">Zero unfulfilled accepted jobs</span>
+          </div>
+
+          <div class="perf-card">
+            <span class="perf-label">On-Time SLA Rate</span>
+            <strong class="perf-val text-green">
+              {{ (100 - ((performance()?.slaBreachRate ?? 0) * 100)) | number:'1.0-0' }}%
+            </strong>
+            <span class="perf-sub">Timely arrival & execution</span>
+          </div>
+
+          <div class="perf-card">
+            <span class="perf-label">Total Completed Washes</span>
+            <strong class="perf-val text-purple">{{ performance()?.totalCompletedJobs || profile()?.totalCompletedJobs || 0 }}</strong>
+            <span class="perf-sub">All-time delivered services</span>
+          </div>
+
+          <div class="perf-card">
+            <span class="perf-label">Avg. Response Time</span>
+            <strong class="perf-val text-slate">
+              {{ performance()?.averageResponseSeconds ? (performance()?.averageResponseSeconds | number:'1.1-1') + 's' : 'Immediate' }}
+            </strong>
+            <span class="perf-sub">To accept dispatch requests</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Skills & Capabilities (STEP 4) -->
+      <div class="settings-card">
+        <div class="card-header-bar">
+          <div>
+            <h2 class="card-title">Skills & Specializations</h2>
+            <p class="card-sub">Services and vehicle treatment skills you are qualified to perform.</p>
+          </div>
+        </div>
+
+        <div class="skills-chips-wrap">
+          @for (skill of skillsList(); track skill) {
+            <div class="skill-chip">
+              <span>{{ skill }}</span>
+              <button type="button" class="btn-remove-skill" (click)="removeSkill(skill)" title="Remove skill">×</button>
+            </div>
+          }
+          @if (skillsList().length === 0) {
+            <p class="no-skills-text">No skills added yet. Add your specializations below.</p>
+          }
+        </div>
+
+        <div class="add-skill-row">
+          <input
+            type="text"
+            class="input-field skill-input"
+            placeholder="Add new skill (e.g. CERAMIC_COATING, SUV_SPECIALIST, FOAM_WASH)"
+            [ngModel]="newSkillInput()"
+            (ngModelChange)="newSkillInput.set($event)"
+            (keyup.enter)="addSkill()" />
+          <button type="button" class="btn-add-skill" (click)="addSkill()" [disabled]="!newSkillInput().trim()">
+            + Add Skill
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. Bank & Payout Details (STEP 6) -->
+      <div class="settings-card">
+        <div class="card-header-bar">
+          <div>
+            <h2 class="card-title">Bank Direct Deposit & Payouts</h2>
+            <p class="card-sub">Secure banking information for automated earnings transfer.</p>
+          </div>
+          <button type="button" class="btn-edit-bank" (click)="openBankModal()">
+            ✏️ Update Bank Info
+          </button>
+        </div>
+
+        <div class="bank-details-grid">
+          <div class="bank-info-tile">
+            <span class="tile-label">Account Holder Name</span>
+            <strong class="tile-val">{{ profile()?.bankAccountHolderName || profile()?.fullName || 'Not Configured' }}</strong>
+          </div>
+
+          <div class="bank-info-tile">
+            <span class="tile-label">Bank Account Number</span>
+            <strong class="tile-val">
+              @if (profile()?.bankAccountNumber) {
+                •••• •••• {{ profile()?.bankAccountNumber?.slice(-4) }}
+              } @else {
+                Not Configured
+              }
+            </strong>
+          </div>
+
+          <div class="bank-info-tile">
+            <span class="tile-label">IFSC Routing Code</span>
+            <strong class="tile-val">{{ profile()?.bankIfscCode || 'Not Configured' }}</strong>
+          </div>
+
+          <div class="bank-info-tile">
+            <span class="tile-label">Stripe Connect Status</span>
+            <strong class="tile-val text-emerald">
+              {{ profile()?.stripeConnectedAccountId ? '✓ Onboarded (' + profile()?.stripeConnectedAccountId + ')' : 'Integrated Direct Payout' }}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Service Area & Dispatch Radius (STEP 8) -->
+      <div class="settings-card">
+        <div class="card-header-bar">
+          <div>
+            <h2 class="card-title">Service Area & Travel Radius</h2>
+            <p class="card-sub">Configure how far you are willing to travel for wash bookings.</p>
+          </div>
+          <button type="button" class="btn-save-radius" (click)="saveServiceArea()" [disabled]="saving()">
+            {{ saving() ? 'Saving...' : '💾 Save Area Settings' }}
+          </button>
+        </div>
+
+        <div class="service-area-body">
+          <div class="slider-control-group">
+            <div class="slider-header">
+              <label>Maximum Service Radius (KM)</label>
+              <span class="radius-badge">{{ serviceRadiusKm() }} km</span>
+            </div>
+            <input
+              type="range"
+              min="2"
+              max="50"
+              step="1"
+              class="radius-slider"
+              [ngModel]="serviceRadiusKm()"
+              (ngModelChange)="serviceRadiusKm.set($event)" />
+            <div class="slider-scale">
+              <span>2 km (Local)</span>
+              <span>25 km (Metro)</span>
+              <span>50 km (Regional)</span>
+            </div>
+          </div>
+
+          <div class="coords-row">
+            <div class="coord-field">
+              <label>Base Latitude</label>
+              <input
+                type="number"
+                step="0.0001"
+                class="input-field"
+                [ngModel]="baseLatitude()"
+                (ngModelChange)="baseLatitude.set($event)" />
+            </div>
+            <div class="coord-field">
+              <label>Base Longitude</label>
+              <input
+                type="number"
+                step="0.0001"
+                class="input-field"
+                [ngModel]="baseLongitude()"
+                (ngModelChange)="baseLongitude.set($event)" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Account Actions & Logout (STEP 11) -->
+      <div class="settings-card logout-card">
+        <div>
+          <h2 class="card-title text-red">Sign Out of Washer Account</h2>
+          <p class="card-sub">You will be logged out of your session on this device. You will stop receiving on-demand requests until you sign in again.</p>
+        </div>
+        <button type="button" class="btn-account-logout" (click)="openLogoutModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          <span>Log Out</span>
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Bank Edit Modal -->
+  @if (showBankModal()) {
+    <div class="modal-backdrop" (click)="closeBankModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Edit Direct Deposit Bank Details</h3>
+        <p class="modal-sub">Earnings will be transferred to this account. Information is verified against the payment system.</p>
+
+        @if (bankError()) {
+          <div class="modal-alert-error">
+            <span>⚠️ {{ bankError() }}</span>
+          </div>
+        }
+
+        <div class="modal-form-group">
+          <label>Account Holder Name</label>
+          <input
+            type="text"
+            class="modal-input"
+            placeholder="e.g. Karthik Raja"
+            [ngModel]="bankHolderName()"
+            (ngModelChange)="bankHolderName.set($event)" />
+        </div>
+
+        <div class="modal-form-group">
+          <label>Bank Account Number (6 to 20 digits)</label>
+          <input
+            type="text"
+            class="modal-input"
+            placeholder="e.g. 50100481928371"
+            [ngModel]="bankAccountNumber()"
+            (ngModelChange)="bankAccountNumber.set($event)" />
+        </div>
+
+        <div class="modal-form-group">
+          <label>IFSC Code</label>
+          <input
+            type="text"
+            class="modal-input"
+            placeholder="e.g. HDFC0001234"
+            [ngModel]="bankIfscCode()"
+            (ngModelChange)="bankIfscCode.set($event)" />
+        </div>
+
+        <div class="modal-actions-row">
+          <button type="button" class="btn-cancel-modal" (click)="closeBankModal()">Cancel</button>
+          <button type="button" class="btn-confirm-modal" (click)="saveBankInfo()">Save Bank Details</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Logout Confirmation Modal (Step 11) -->
+  @if (showLogoutModal()) {
+    <div class="modal-backdrop" (click)="closeLogoutModal()">
+      <div class="modal-card logout-modal" (click)="$event.stopPropagation()">
+        <div class="logout-icon-wrap">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </div>
+        <h3 class="modal-title">Are you sure you want to log out?</h3>
+        <p class="modal-sub">You will be signed out of your Washer portal and will not receive new wash requests until you sign in again.</p>
+
+        <div class="modal-actions-row">
+          <button type="button" class="btn-cancel-modal" (click)="closeLogoutModal()">Cancel</button>
+          <button type="button" class="btn-confirm-danger" (click)="confirmLogout()" [disabled]="loggingOut()">
+            {{ loggingOut() ? 'Signing out...' : 'Log Out' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

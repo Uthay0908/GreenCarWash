@@ -1,0 +1,260 @@
+<div class="washer-kyc-container">
+  <!-- Page Header -->
+  <div class="page-title-row">
+    <div>
+      <div class="breadcrumb-row">
+        <a routerLink="/washer" class="crumb-link">Dashboard</a>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-current">KYC & Documents</span>
+      </div>
+      <h1 class="main-heading">KYC Verification & Compliance</h1>
+      <p class="sub-heading">Upload government identification, commercial driving license, and certifications for platform approval.</p>
+    </div>
+
+    @if (washerProfile()?.kycStatus !== 'APPROVED' && washerProfile()?.kycStatus !== 'PENDING' && uploadedDocuments().length > 0) {
+      <button type="button" class="btn-primary-submit-kyc" (click)="submitForReview()" [disabled]="submitting()">
+        {{ submitting() ? 'Submitting...' : '🚀 Submit for Admin Review' }}
+      </button>
+    }
+  </div>
+
+  @if (toastMessage()) {
+    <div class="toast-bar">
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="kyc-loading-state">
+      <div class="spinner"></div>
+      <p>Loading compliance records and uploaded documents...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (!loading() && errorMessage()) {
+    <div class="kyc-error-card">
+      <span class="error-emoji">⚠️</span>
+      <h3 class="error-title">Could Not Load Documents</h3>
+      <p class="error-desc">{{ errorMessage() }}</p>
+      <button type="button" class="btn-error-retry" (click)="loadKycData()">
+        <span>🔄 Retry</span>
+      </button>
+    </div>
+  }
+
+  <!-- Content State -->
+  @if (!loading() && washerProfile()) {
+    <!-- Verification Status Banner -->
+    <div class="kyc-status-banner" [ngClass]="{
+      'banner-approved': washerProfile()?.kycStatus === 'APPROVED',
+      'banner-pending': washerProfile()?.kycStatus === 'PENDING',
+      'banner-rejected': washerProfile()?.kycStatus === 'REJECTED',
+      'banner-unverified': !washerProfile()?.kycStatus || washerProfile()?.kycStatus === 'NOT_SUBMITTED'
+    }">
+      <div class="banner-icon-wrap">
+        @if (washerProfile()?.kycStatus === 'APPROVED') {
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        } @else if (washerProfile()?.kycStatus === 'PENDING') {
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        } @else if (washerProfile()?.kycStatus === 'REJECTED') {
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        } @else {
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        }
+      </div>
+
+      <div class="banner-text-col">
+        <h3 class="banner-title">
+          @if (washerProfile()?.kycStatus === 'APPROVED') {
+            Partner Credentials Verified & Active
+          } @else if (washerProfile()?.kycStatus === 'PENDING') {
+            Verification Review In Progress
+          } @else if (washerProfile()?.kycStatus === 'REJECTED') {
+            Verification Required Attention
+          } @else {
+            KYC Documentation Incomplete
+          }
+        </h3>
+        <p class="banner-sub">
+          @if (washerProfile()?.kycStatus === 'APPROVED') {
+            Your identity and background checks have been verified. You are authorized to accept on-demand and scheduled car wash bookings.
+          } @else if (washerProfile()?.kycStatus === 'PENDING') {
+            Your documents were submitted and are currently queued for compliance review. You will be activated once verified.
+          } @else if (washerProfile()?.kycStatus === 'REJECTED') {
+            One or more documents were not accepted. Please re-upload clear photos or correct document numbers below.
+          } @else {
+            Please upload your Aadhaar, Commercial Driving License, and Police Verification Certificate to activate dispatch eligibility.
+          }
+        </p>
+      </div>
+
+      @if (washerProfile()?.kycStatus !== 'APPROVED' && washerProfile()?.kycStatus !== 'PENDING') {
+        <button type="button" class="btn-banner-upload" (click)="openUploadModal()">
+          + Upload Document
+        </button>
+      }
+    </div>
+
+    <!-- Required Documents Grid -->
+    <div class="kyc-docs-grid">
+      @for (docDef of requiredDocList; track docDef.type) {
+        @let uploaded = getDocForType(docDef.type);
+        <div class="kyc-doc-card" [class.is-uploaded]="!!uploaded">
+          <div class="doc-card-top">
+            <div class="doc-icon-badge">
+              @if (uploaded) {
+                <span class="text-green">✓</span>
+              } @else {
+                <span class="text-muted">📄</span>
+              }
+            </div>
+
+            <div class="doc-badge-pill" [ngClass]="{
+              'badge-approved': uploaded?.status === 'APPROVED' || washerProfile()?.kycStatus === 'APPROVED',
+              'badge-pending': uploaded?.status === 'PENDING',
+              'badge-rejected': uploaded?.status === 'REJECTED',
+              'badge-missing': !uploaded
+            }">
+              @if (uploaded?.status === 'APPROVED' || washerProfile()?.kycStatus === 'APPROVED') {
+                Verified
+              } @else if (uploaded?.status === 'PENDING') {
+                Under Review
+              } @else if (uploaded?.status === 'REJECTED') {
+                Rejected
+              } @else {
+                {{ docDef.required ? 'Required' : 'Optional' }}
+              }
+            </div>
+          </div>
+
+          <div class="doc-card-body">
+            <h3 class="doc-title">{{ docDef.title }}</h3>
+            <p class="doc-description">{{ docDef.description }}</p>
+
+            @if (uploaded) {
+              <div class="doc-record-meta">
+                <span class="meta-label">Document Ref:</span>
+                <strong class="meta-val">{{ uploaded.documentNumber }}</strong>
+              </div>
+            }
+          </div>
+
+          <div class="doc-card-footer">
+            @if (uploaded) {
+              <button type="button" class="btn-view-doc" (click)="openViewModal(uploaded)">
+                👁️ View Document
+              </button>
+              @if (washerProfile()?.kycStatus !== 'APPROVED' && washerProfile()?.kycStatus !== 'PENDING') {
+                <button type="button" class="btn-replace-doc" (click)="openUploadModal(docDef.type)">
+                  Replace
+                </button>
+              }
+            } @else {
+              @if (washerProfile()?.kycStatus !== 'APPROVED' && washerProfile()?.kycStatus !== 'PENDING') {
+                <button type="button" class="btn-upload-action" (click)="openUploadModal(docDef.type)">
+                  Upload Now →
+                </button>
+              } @else {
+                <span class="doc-locked-note">Locked during review</span>
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Upload Modal -->
+  @if (showUploadModal()) {
+    <div class="modal-backdrop" (click)="closeUploadModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Upload Compliance Document</h3>
+        <p class="modal-sub">Submit clear, unblurred photos of your official documents for identity verification.</p>
+
+        @if (uploadError()) {
+          <div class="modal-alert-error">
+            <span>⚠️ {{ uploadError() }}</span>
+          </div>
+        }
+
+        <div class="modal-form-group">
+          <label>Document Category</label>
+          <select
+            class="modal-select"
+            [ngModel]="selectedDocType()"
+            (ngModelChange)="selectedDocType.set($event)">
+            <option value="NATIONAL_ID">Aadhaar / National Identity Card</option>
+            <option value="DRIVING_LICENSE">Commercial Driving License</option>
+            <option value="PROOF_OF_ADDRESS">Proof of Residential Address</option>
+            <option value="BACKGROUND_CHECK">Police Clearance / Background Certificate</option>
+            <option value="VEHICLE_INSURANCE">Equipment & Vehicle Insurance</option>
+            <option value="OTHER">Other Compliance Document</option>
+          </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>Document Number / Reference ID</label>
+          <input
+            type="text"
+            class="modal-input"
+            placeholder="e.g. 5420 1849 9281 or TN09 20210045812"
+            [ngModel]="documentNumberInput()"
+            (ngModelChange)="documentNumberInput.set($event)" />
+        </div>
+
+        <div class="modal-form-group">
+          <label>Document Image / File</label>
+          <input type="file" accept="image/*,.pdf" class="modal-file-input" (change)="onFileSelected($event)" />
+          @if (filePreviewUrl()) {
+            <div class="preview-thumb-wrap">
+              <img [src]="filePreviewUrl()" alt="Preview" class="preview-thumb" />
+              <span class="preview-tag">File Ready for Upload</span>
+            </div>
+          }
+        </div>
+
+        <div class="modal-actions-row">
+          <button type="button" class="btn-cancel-modal" (click)="closeUploadModal()">Cancel</button>
+          <button
+            type="button"
+            class="btn-confirm-modal"
+            (click)="saveDocumentUpload()"
+            [disabled]="submitting() || !documentNumberInput().trim() || !filePreviewUrl()">
+            {{ submitting() ? 'Uploading...' : 'Save & Upload Document' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- View Document Modal -->
+  @if (showViewModal()) {
+    <div class="modal-backdrop" (click)="closeViewModal()">
+      <div class="modal-card view-modal" (click)="$event.stopPropagation()">
+        <div class="view-header">
+          <div>
+            <h3 class="modal-title">{{ viewingDocument()?.documentType }}</h3>
+            <span class="modal-sub">Ref: {{ viewingDocument()?.documentNumber }}</span>
+          </div>
+          <button type="button" class="btn-close-view" (click)="closeViewModal()">×</button>
+        </div>
+
+        <div class="view-image-wrap">
+          @if (viewingDocument()?.fileUrl) {
+            <img [src]="viewingDocument()?.fileUrl" alt="KYC Document" class="full-doc-img" />
+          } @else {
+            <div class="no-img-placeholder">
+              <span>📄 Document on record in compliance storage</span>
+            </div>
+          }
+        </div>
+
+        <div class="modal-actions-row">
+          <button type="button" class="btn-cancel-modal" (click)="closeViewModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

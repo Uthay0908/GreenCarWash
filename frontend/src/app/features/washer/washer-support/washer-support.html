@@ -1,0 +1,486 @@
+<div class="support-page">
+  <!-- Hero Header -->
+  <header class="support-hero">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        FLEET DISPATCH & PARTNER DESK
+      </div>
+      <h1 class="hero-title">Help & Support</h1>
+      <p class="hero-subtitle">
+        Find fast answers, raise operational equipment tickets, or connect directly with GreenCarWash dispatch.
+      </p>
+    </div>
+
+    <div class="emergency-card">
+      <div class="emergency-icon">🚨</div>
+      <div class="emergency-info">
+        <span class="emergency-label">24/7 Field Hotline</span>
+        <a href="tel:18004733622" class="emergency-phone">1800-473-3622</a>
+      </div>
+      <a href="tel:18004733622" class="btn-emergency">Call Dispatch</a>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="support-tabs-bar">
+    <div class="tabs-container">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'faqs'"
+        (click)="activeTab.set('faqs')">
+        <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Knowledge Base & FAQs
+      </button>
+
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'tickets'"
+        (click)="activeTab.set('tickets')">
+        <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        My Support Tickets
+        @if (openTicketsCount > 0) {
+          <span class="badge-count">{{ openTicketsCount }}</span>
+        }
+      </button>
+
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'create'"
+        (click)="activeTab.set('create')">
+        <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Create Ticket
+      </button>
+
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'contact'"
+        (click)="activeTab.set('contact')">
+        <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+        </svg>
+        Contact Dispatch
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB CONTENT 1: FAQs -->
+  @if (activeTab() === 'faqs') {
+    <div class="tab-pane">
+      <!-- Search & Filters -->
+      <div class="faq-controls">
+        <div class="search-box">
+          <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search washer instructions, equipment guides, policies..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+            class="search-input"
+          />
+          @if (searchQuery()) {
+            <button class="clear-btn" (click)="searchQuery.set('')">✕</button>
+          }
+        </div>
+
+        <div class="category-pills">
+          <button
+            class="pill-btn"
+            [class.active]="selectedFaqCategory() === 'ALL'"
+            (click)="selectedFaqCategory.set('ALL')">
+            All Topics
+          </button>
+          <button
+            class="pill-btn"
+            [class.active]="selectedFaqCategory() === 'EQUIPMENT'"
+            (click)="selectedFaqCategory.set('EQUIPMENT')">
+            Equipment
+          </button>
+          <button
+            class="pill-btn"
+            [class.active]="selectedFaqCategory() === 'WATER'"
+            (click)="selectedFaqCategory.set('WATER')">
+            Water Eco-Usage
+          </button>
+          <button
+            class="pill-btn"
+            [class.active]="selectedFaqCategory() === 'BOOKINGS'"
+            (click)="selectedFaqCategory.set('BOOKINGS')">
+            Bookings & Customer
+          </button>
+          <button
+            class="pill-btn"
+            [class.active]="selectedFaqCategory() === 'PAYMENTS'"
+            (click)="selectedFaqCategory.set('PAYMENTS')">
+            Earnings & Payouts
+          </button>
+        </div>
+      </div>
+
+      <!-- FAQ Accordion List -->
+      <div class="faq-list">
+        @if (loadingFaqs()) {
+          <div class="skeleton-list">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+        } @else if (filteredFaqs.length === 0) {
+          <div class="empty-faq-state">
+            <div class="empty-icon">🔍</div>
+            <h3>No results found</h3>
+            <p>We couldn't find any questions matching "{{ searchQuery() }}". Try a different search term or raise a ticket directly.</p>
+            <button class="btn-primary" (click)="activeTab.set('create')">Raise a Ticket</button>
+          </div>
+        } @else {
+          @for (faq of filteredFaqs; track faq.question) {
+            <div class="faq-accordion-item" [class.open]="faq.open">
+              <button class="faq-header" (click)="toggleFaq(faq)">
+                <span class="faq-category-tag">{{ faq.category }}</span>
+                <span class="faq-question">{{ faq.question }}</span>
+                <span class="chevron-icon" [class.rotated]="faq.open">▼</span>
+              </button>
+              @if (faq.open) {
+                <div class="faq-body">
+                  <p>{{ faq.answer }}</p>
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TAB CONTENT 2: MY TICKETS -->
+  @if (activeTab() === 'tickets') {
+    <div class="tab-pane">
+      <div class="tickets-header-row">
+        <div class="filter-group">
+          <span class="filter-label">Status:</span>
+          <div class="filter-chips">
+            <button
+              class="chip-btn"
+              [class.active]="ticketFilter() === 'ALL'"
+              (click)="ticketFilter.set('ALL')">
+              All ({{ tickets().length }})
+            </button>
+            <button
+              class="chip-btn"
+              [class.active]="ticketFilter() === 'OPEN'"
+              (click)="ticketFilter.set('OPEN')">
+              Open
+            </button>
+            <button
+              class="chip-btn"
+              [class.active]="ticketFilter() === 'IN_PROGRESS'"
+              (click)="ticketFilter.set('IN_PROGRESS')">
+              In Progress
+            </button>
+            <button
+              class="chip-btn"
+              [class.active]="ticketFilter() === 'RESOLVED'"
+              (click)="ticketFilter.set('RESOLVED')">
+              Resolved
+            </button>
+          </div>
+        </div>
+
+        <button class="btn-action-primary" (click)="activeTab.set('create')">
+          + New Ticket
+        </button>
+      </div>
+
+      @if (loadingTickets()) {
+        <div class="skeleton-list">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      } @else if (filteredTickets.length === 0) {
+        <div class="empty-tickets-state">
+          <div class="empty-state-icon">📋</div>
+          <h3>No support tickets</h3>
+          <p>You do not have any {{ ticketFilter() !== 'ALL' ? ticketFilter().toLowerCase() : '' }} operational tickets on file.</p>
+          <button class="btn-primary" (click)="activeTab.set('create')">Create Operational Ticket</button>
+        </div>
+      } @else {
+        <div class="tickets-grid">
+          @for (ticket of filteredTickets; track ticket.id) {
+            <div class="ticket-card" [class.is-open]="ticket.status === 'OPEN'">
+              <div class="ticket-card-header">
+                <div class="ticket-meta">
+                  <span class="ticket-id">#TICK-{{ ticket.id }}</span>
+                  <span class="badge-category">{{ formatCategory(ticket.category) }}</span>
+                  @if (ticket.replacementRequested) {
+                    <span class="badge-replacement">⚠️ Replacement Requested</span>
+                  }
+                </div>
+                <span class="status-pill" [attr.data-status]="ticket.status">
+                  {{ formatStatus(ticket.status) }}
+                </span>
+              </div>
+
+              <h3 class="ticket-subject">{{ ticket.subject }}</h3>
+              <p class="ticket-description">{{ ticket.description }}</p>
+
+              @if (ticket.resolution) {
+                <div class="ticket-resolution-box">
+                  <div class="res-title">Admin Resolution:</div>
+                  <div class="res-body">{{ ticket.resolution }}</div>
+                </div>
+              }
+
+              <div class="ticket-card-footer">
+                <div class="footer-info">
+                  <span class="info-date">Submitted: {{ ticket.createdAt | date:'mediumDate' }} at {{ ticket.createdAt | date:'shortTime' }}</span>
+                  @if (ticket.slaDueAt && ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED') {
+                    <span class="sla-timer">SLA Target: {{ ticket.slaDueAt | date:'short' }}</span>
+                  }
+                </div>
+                @if (ticket.bookingId) {
+                  <span class="linked-booking">Booking #{{ ticket.bookingId }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB CONTENT 3: CREATE TICKET -->
+  @if (activeTab() === 'create') {
+    <div class="tab-pane">
+      <div class="create-ticket-wrapper">
+        <div class="form-header-card">
+          <h2>Raise an Operational Support Ticket</h2>
+          <p>
+            Report broken equipment, vehicle complications, customer absence, or request fleet assistance.
+            Our field dispatch supervisors monitor operational tickets with prioritized SLAs.
+          </p>
+        </div>
+
+        @if (ticketSuccess()) {
+          <div class="alert alert-success">
+            <span class="alert-icon">✓</span>
+            <div>
+              <strong>Success!</strong>
+              <p>{{ ticketSuccess() }}</p>
+            </div>
+          </div>
+        }
+
+        @if (ticketError()) {
+          <div class="alert alert-error">
+            <span class="alert-icon">⚠️</span>
+            <div>
+              <strong>Error</strong>
+              <p>{{ ticketError() }}</p>
+            </div>
+          </div>
+        }
+
+        <form [formGroup]="ticketForm" (ngSubmit)="submitTicket()" class="ticket-form-card">
+          <!-- Category Selection -->
+          <div class="form-row">
+            <label class="form-label">Issue Category <span class="required">*</span></label>
+            <div class="category-radio-group">
+              <label class="radio-card" [class.selected]="ticketForm.get('category')?.value === 'EQUIPMENT_ISSUE'">
+                <input type="radio" formControlName="category" value="EQUIPMENT_ISSUE">
+                <span class="radio-icon">🔧</span>
+                <span class="radio-title">Equipment Issue</span>
+                <span class="radio-desc">Water pump, hose, foam gun, inverter</span>
+              </label>
+
+              <label class="radio-card" [class.selected]="ticketForm.get('category')?.value === 'SERVICE_ISSUE'">
+                <input type="radio" formControlName="category" value="SERVICE_ISSUE">
+                <span class="radio-icon">⚡</span>
+                <span class="radio-title">Service Issue</span>
+                <span class="radio-desc">Customer delayed, spot inaccessible</span>
+              </label>
+
+              <label class="radio-card" [class.selected]="ticketForm.get('category')?.value === 'VEHICLE_ISSUE'">
+                <input type="radio" formControlName="category" value="VEHICLE_ISSUE">
+                <span class="radio-icon">🚗</span>
+                <span class="radio-title">Vehicle Issue</span>
+                <span class="radio-desc">Wrong model, heavy mud, pre-scratches</span>
+              </label>
+
+              <label class="radio-card" [class.selected]="ticketForm.get('category')?.value === 'GENERAL'">
+                <input type="radio" formControlName="category" value="GENERAL">
+                <span class="radio-icon">💬</span>
+                <span class="radio-title">General</span>
+                <span class="radio-desc">Payout inquiries, scheduling support</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Linked Booking (Optional) -->
+          <div class="form-row">
+            <label class="form-label" for="bookingId">Link to a Booking (Optional)</label>
+            <select id="bookingId" formControlName="bookingId" class="form-input">
+              <option value="">-- No specific booking linked --</option>
+              @for (b of recentBookings(); track b.id) {
+                <option [value]="b.id">Booking #{{ b.id }} - {{ b.vehicleModel || 'Vehicle' }} ({{ b.status }})</option>
+              }
+            </select>
+            <span class="hint-text">Linking to a booking helps dispatch immediately locate the vehicle and customer.</span>
+          </div>
+
+          <!-- Subject -->
+          <div class="form-row">
+            <label class="form-label" for="ticketSubject">Summary / Subject <span class="required">*</span></label>
+            <input
+              id="ticketSubject"
+              type="text"
+              formControlName="subject"
+              placeholder="e.g. Foam cannon nozzle cracked, unable to spray shampoo"
+              class="form-input"
+              [class.has-error]="ticketForm.get('subject')?.touched && ticketForm.get('subject')?.invalid"
+            />
+            @if (ticketForm.get('subject')?.touched && ticketForm.get('subject')?.hasError('required')) {
+              <span class="error-msg">Subject is required</span>
+            }
+          </div>
+
+          <!-- Description -->
+          <div class="form-row">
+            <label class="form-label" for="ticketDesc">Detailed Description <span class="required">*</span></label>
+            <textarea
+              id="ticketDesc"
+              rows="5"
+              formControlName="description"
+              placeholder="Describe what occurred, any safety hazards, and current location if in the field..."
+              class="form-input"
+              [class.has-error]="ticketForm.get('description')?.touched && ticketForm.get('description')?.invalid">
+            </textarea>
+            @if (ticketForm.get('description')?.touched && ticketForm.get('description')?.hasError('required')) {
+              <span class="error-msg">Detailed description is required</span>
+            }
+          </div>
+
+          <!-- Replacement Requested Checkbox -->
+          <div class="form-row checkbox-row">
+            <label class="checkbox-container">
+              <input type="checkbox" formControlName="replacementRequested">
+              <span class="checkmark"></span>
+              <div class="checkbox-label">
+                <strong>Request Immediate Fleet / Equipment Replacement</strong>
+                <p>Check this if you are immobilized and need dispatch to deliver replacement tools or reassign the customer.</p>
+              </div>
+            </label>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="button" class="btn-cancel" (click)="activeTab.set('faqs')">Cancel</button>
+            <button
+              type="submit"
+              class="btn-submit"
+              [disabled]="submittingTicket() || ticketForm.invalid">
+              @if (submittingTicket()) {
+                <span class="btn-spinner"></span> Submitting...
+              } @else {
+                Submit Operational Ticket
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- TAB CONTENT 4: CONTACT DISPATCH -->
+  @if (activeTab() === 'contact') {
+    <div class="tab-pane">
+      <div class="contact-grid">
+        <div class="contact-card primary-card">
+          <div class="contact-header">
+            <div class="card-icon">📞</div>
+            <div>
+              <h3>24/7 Field Operations Dispatch</h3>
+              <p>Direct priority line for active washers on shift</p>
+            </div>
+          </div>
+          <div class="contact-details">
+            <a href="tel:18004733622" class="call-btn-link">
+              <span class="phone-number">1800-473-3622</span>
+              <span class="toll-free-tag">Toll-Free (24/7)</span>
+            </a>
+            <p class="desc">For roadside accidents, hostile situations, customer disputes, or immediate equipment replacements.</p>
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-header">
+            <div class="card-icon">✉️</div>
+            <div>
+              <h3>Partner Support Desk</h3>
+              <p>Non-urgent payout, KYC, and account inquiries</p>
+            </div>
+          </div>
+          <div class="contact-details">
+            <a href="mailto:washer-ops@greencarwash.com" class="email-link">
+              washer-ops&#64;greencarwash.com
+            </a>
+            <p class="desc">Typical response time: under 4 hours during business days.</p>
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-header">
+            <div class="card-icon">📍</div>
+            <div>
+              <h3>Central Hub & Tool Depot</h3>
+              <p>Equipment inspection, consumables restocking</p>
+            </div>
+          </div>
+          <div class="contact-details">
+            <address class="hub-address">
+              GreenCarWash Operations Hub 4<br/>
+              Sector 62, Eco Logistic Park, Bangalore - 560001
+            </address>
+            <p class="desc">Depot Hours: Monday – Saturday, 06:00 AM – 09:00 PM</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Safety Protocol Card -->
+      <div class="safety-protocol-card">
+        <div class="safety-badge">SAFETY FIRST PROTOCOL</div>
+        <h3>Washer Field Emergency Procedures</h3>
+        <div class="protocol-steps">
+          <div class="protocol-step">
+            <div class="step-num">1</div>
+            <div>
+              <h4>Ensure Personal Safety</h4>
+              <p>If there is heavy rain, lightning, electrical hazard, or hazardous parking, pause work immediately and seek shelter.</p>
+            </div>
+          </div>
+          <div class="protocol-step">
+            <div class="step-num">2</div>
+            <div>
+              <h4>Notify Customer via App</h4>
+              <p>Keep the customer updated via messaging or call so they understand the cause of any pause.</p>
+            </div>
+          </div>
+          <div class="protocol-step">
+            <div class="step-num">3</div>
+            <div>
+              <h4>Call Dispatch or Raise Ticket</h4>
+              <p>Contact 1800-473-3622 immediately so your completion SLA is paused without penalties.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

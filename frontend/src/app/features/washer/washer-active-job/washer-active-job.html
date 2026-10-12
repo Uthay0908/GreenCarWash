@@ -1,0 +1,1586 @@
+<div class="active-job-container">
+  <!-- Toast Notification -->
+  @if (toastMessage()) {
+    <div class="job-toast-bar">
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="job-loading-screen">
+      <div class="eco-spinner"></div>
+      <p class="loading-text">Loading assigned job details from database...</p>
+    </div>
+  }
+
+  <!-- Error / No Job State -->
+  @if (!loading() && errorMessage() && !booking()) {
+    <div class="job-error-banner">
+      <div class="error-emoji">⚠️</div>
+      <h2 class="error-title">No Active Job Found</h2>
+      <p class="error-detail">{{ errorMessage() }}</p>
+      <div class="error-actions">
+        <a routerLink="/washer/requests" class="btn-error-action btn-browse">Browse Available Requests</a>
+        <a routerLink="/washer/jobs" class="btn-error-action btn-jobs">View Assigned Jobs Ledger</a>
+      </div>
+    </div>
+  }
+
+  @if (!loading() && booking()) {
+    <!-- TOP HEADER BAR -->
+    <header class="job-header-bar">
+      <div class="header-left">
+        <nav class="breadcrumb-row">
+          <a routerLink="/washer" class="crumb-link">Dashboard</a>
+          <span class="crumb-sep">/</span>
+          <a routerLink="/washer/jobs" class="crumb-link">Jobs</a>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-current">Job #GCW-{{ bookingId() }}</span>
+        </nav>
+        <div class="title-with-badge">
+          <h1 class="main-heading">Service Execution Workspace</h1>
+          <span class="status-glow-pill" [ngClass]="'st-' + currentStatus().toLowerCase()">
+            <span class="pulse-dot"></span>
+            {{ currentStatus() }}
+          </span>
+        </div>
+        <p class="sub-heading">{{ washPackage()?.name || 'Eco Steam Wash & Detailing' }}</p>
+      </div>
+
+      <div class="header-right">
+        <div class="payout-badge-card">
+          <span class="payout-label">Your Payout</span>
+          <strong class="payout-amount">${{ washerPayout() }}</strong>
+          <span class="payout-sub">70% commission share</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- STATUS WORKFLOW STEPPER -->
+    <div class="stepper-track-wrap">
+      <div class="stepper-step" [class.done]="['ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'].includes(currentStatus())" [class.current]="currentStatus() === 'ACCEPTED'">
+        <div class="step-circle">1</div>
+        <div class="step-meta">
+          <span class="step-title">Accepted</span>
+          <span class="step-hint">Job Confirmed</span>
+        </div>
+      </div>
+      <div class="stepper-line" [class.filled]="['ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'].includes(currentStatus())"></div>
+
+      <div class="stepper-step" [class.done]="['ARRIVED', 'IN_PROGRESS', 'COMPLETED'].includes(currentStatus())" [class.current]="currentStatus() === 'ON_THE_WAY'">
+        <div class="step-circle">2</div>
+        <div class="step-meta">
+          <span class="step-title">On The Way</span>
+          <span class="step-hint">GPS & Route</span>
+        </div>
+      </div>
+      <div class="stepper-line" [class.filled]="['ARRIVED', 'IN_PROGRESS', 'COMPLETED'].includes(currentStatus())"></div>
+
+      <div class="stepper-step" [class.done]="['IN_PROGRESS', 'COMPLETED'].includes(currentStatus())" [class.current]="currentStatus() === 'ARRIVED'">
+        <div class="step-circle">3</div>
+        <div class="step-meta">
+          <span class="step-title">Arrived</span>
+          <span class="step-hint">At Location</span>
+        </div>
+      </div>
+      <div class="stepper-line" [class.filled]="['IN_PROGRESS', 'COMPLETED'].includes(currentStatus())"></div>
+
+      <div class="stepper-step" [class.done]="currentStatus() === 'COMPLETED'" [class.current]="currentStatus() === 'IN_PROGRESS'">
+        <div class="step-circle">4</div>
+        <div class="step-meta">
+          <span class="step-title">In Progress</span>
+          <span class="step-hint">Photos & Tasks</span>
+        </div>
+      </div>
+      <div class="stepper-line" [class.filled]="currentStatus() === 'COMPLETED'"></div>
+
+      <div class="stepper-step" [class.done]="currentStatus() === 'COMPLETED'" [class.current]="currentStatus() === 'COMPLETED'">
+        <div class="step-circle">5</div>
+        <div class="step-meta">
+          <span class="step-title">Completed</span>
+          <span class="step-hint">Verified & Paid</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPLETION ERROR NOTIFICATION BANNER -->
+    @if (completionErrorReason()) {
+      <div class="completion-error-banner">
+        <div class="err-badge-icon">⚠️</div>
+        <div class="err-content-wrap">
+          <h4 class="err-banner-title">Service Completion Rejected</h4>
+          <p class="err-banner-desc">{{ completionErrorReason() }}</p>
+        </div>
+        <button type="button" class="btn-dismiss-err" (click)="completionErrorReason.set(null)" aria-label="Dismiss error">✕</button>
+      </div>
+    }
+
+    <!-- PRIMARY ACTION CTA BANNER -->
+    <div class="action-banner-card" [ngClass]="'banner-' + currentStatus().toLowerCase()">
+      <div class="banner-content">
+        @if (currentStatus() === 'ACCEPTED') {
+          <div class="banner-icon">🚗</div>
+          <div class="banner-text">
+            <h3>Ready to head out?</h3>
+            <p>Start your route to notify the customer and activate live navigation.</p>
+          </div>
+          <button type="button" class="btn-cta btn-cta-start-trip" [disabled]="actionInProgress()" (click)="startTripOnTheWay()">
+            <span>🚗 START TRIP (ON THE WAY)</span>
+          </button>
+        } @else if (currentStatus() === 'ON_THE_WAY') {
+          <div class="banner-icon">📍</div>
+          <div class="banner-text">
+            <h3>En Route to Vehicle (ETA: {{ etaMinutes() }} min)</h3>
+            <p>When you pull up to the customer's address, confirm your arrival.</p>
+          </div>
+          <div class="banner-btns-group">
+            <button type="button" class="btn-cta btn-cta-arrived" [disabled]="actionInProgress()" (click)="markArrived()">
+              <span>📍 I HAVE ARRIVED</span>
+            </button>
+            <button type="button" class="btn-sub-cta" (click)="openExternalNavigation()">
+              <span>🧭 Open GPS</span>
+            </button>
+          </div>
+        } @else if (currentStatus() === 'ARRIVED') {
+          <div class="banner-icon">🚿</div>
+          <div class="banner-text">
+            <h3>You Have Arrived on Location!</h3>
+            @if (uploadedPhotosCount() === 0) {
+              <p style="color: #f59e0b; font-weight: 600;">⚠️ Step Required: Capture and upload at least 1 Before-Wash Photo before starting the wash.</p>
+            } @else {
+              <p style="color: #10b981; font-weight: 600;">✓ {{ uploadedPhotosCount() }} Before Photo(s) uploaded. Ready to start wash!</p>
+            }
+          </div>
+          <div class="banner-btns-group">
+            <button type="button" class="btn-cta btn-cta-start-wash" [disabled]="actionInProgress()" (click)="startService()">
+              <span>🚿 START SERVICE NOW</span>
+            </button>
+            @if (uploadedPhotosCount() === 0) {
+              <button type="button" class="btn-sub-cta" (click)="setTab('PHOTOS'); setPhotoPhase('BEFORE')">
+                <span>📷 Upload Before Photos</span>
+              </button>
+            }
+          </div>
+        } @else if (currentStatus() === 'IN_PROGRESS') {
+          <div class="banner-icon">🧼</div>
+          <div class="banner-text">
+            @if (allMandatoryCompleted() && uploadedAfterPhotosCount() >= 1) {
+              <h3>All Required Tasks & Photos Done!</h3>
+              <p>Ready to finalize the service record and submit verification to backend.</p>
+            } @else {
+              <h3>Service In Progress ({{ checklistCompletedCount() }}/{{ checklistTotal() }} Done)</h3>
+              <p>Complete all mandatory checklist tasks and record required after photos.</p>
+            }
+          </div>
+          <div class="banner-btns-group">
+            @if (allMandatoryCompleted() && uploadedAfterPhotosCount() >= 1) {
+              <button type="button" class="btn-cta btn-cta-complete-glow" [disabled]="completingService()" (click)="completeService()">
+                @if (completingService()) {
+                  <span class="spinner-inline"></span>
+                  <span>Completing...</span>
+                } @else {
+                  <span>🏁 COMPLETE SERVICE</span>
+                }
+              </button>
+            } @else {
+              <button type="button" class="btn-cta btn-cta-in-progress" (click)="setTab('CHECKLIST')">
+                <span>✅ View Checklist</span>
+              </button>
+              <button type="button" class="btn-sub-cta" (click)="setTab('PHOTOS'); setPhotoPhase('AFTER')">
+                <span>📸 After Photos</span>
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="banner-icon">🎉</div>
+          <div class="banner-text">
+            <h3>Service Record Finalized</h3>
+            <p>This wash service has been completed and verified on the backend.</p>
+          </div>
+          <button type="button" class="btn-cta btn-cta-jobs" (click)="goToJobs()">View Job Ledger</button>
+        }
+      </div>
+    </div>
+
+    <!-- TAB SWITCHER STRIP -->
+    <div class="workspace-tabs-strip">
+      <button type="button" class="tab-pill" [class.active]="activeTab() === 'DETAILS'" (click)="setTab('DETAILS')">
+        <span>📋 Job Details</span>
+      </button>
+
+      <button type="button" class="tab-pill" [class.active]="activeTab() === 'NAVIGATION'" (click)="setTab('NAVIGATION')">
+        <span>📍 Navigation & ETA</span>
+        <span class="tab-badge-val">{{ distanceKm() }} km</span>
+      </button>
+
+      <button type="button" class="tab-pill" [class.active]="activeTab() === 'PHOTOS'" (click)="setTab('PHOTOS')">
+        <span>📸 Photos</span>
+        <span class="tab-badge-val" [class.badge-done]="uploadedPhotosCount() === 5 && uploadedAfterPhotosCount() === 5">
+          {{ uploadedPhotosCount() + uploadedAfterPhotosCount() }}/10
+        </span>
+      </button>
+
+      <button type="button" class="tab-pill" [class.active]="activeTab() === 'CHECKLIST'" (click)="setTab('CHECKLIST')">
+        <span>✅ Checklist</span>
+        <span class="tab-badge-val" [class.badge-done]="checklistPercent() === 100">{{ checklistPercent() }}%</span>
+      </button>
+
+      <button type="button" class="tab-pill" [class.active]="activeTab() === 'WATER'" (click)="setTab('WATER')">
+        <span>💧 Water Usage</span>
+        <span class="tab-badge-val" [class.badge-done]="waterUsageData() != null">
+          {{ waterUsageData() ? waterUsageData()?.waterSavedLiters + 'L saved' : waterUsageLiters() + 'L' }}
+        </span>
+      </button>
+
+      <button type="button" class="tab-pill" [class.active]="activeTab() === 'ADDONS'" (click)="setTab('ADDONS')">
+        <span>➕ Add-ons</span>
+        @if (requestedAddons().length > 0) {
+          <span class="tab-badge-val">{{ requestedAddons().length }}</span>
+        }
+      </button>
+
+      <button type="button" class="tab-pill" [class.active]="activeTab() === 'PAYMENT'" (click)="setTab('PAYMENT')">
+        <span>💳 Payment & COD</span>
+        <span class="tab-badge-val" [class.badge-done]="isPaymentSettled()">
+          {{ isPaymentSettled() ? 'PAID' : 'DUE' }}
+        </span>
+      </button>
+    </div>
+
+    <!-- MAIN TWO-COLUMN WORKSPACE -->
+    <div class="job-workspace-grid">
+      <!-- LEFT SIDEBAR: VEHICLE & CUSTOMER & ADDRESS -->
+      <aside class="job-sidebar-column">
+        <!-- 1. VEHICLE CARD -->
+        <div class="sidebar-card vehicle-card">
+          <div class="card-title-row">
+            <span class="card-icon">🚗</span>
+            <h2 class="card-heading">Vehicle Details</h2>
+          </div>
+
+          <div class="vehicle-hero-media">
+            @if (vehicle()?.imageUrl) {
+              <img [src]="vehicle()?.imageUrl" [alt]="vehicle()?.make + ' ' + vehicle()?.model" class="vehicle-img" />
+            } @else {
+              <div class="vehicle-placeholder-art">
+                <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.5">
+                  <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9C2.1 11.2 2 11.6 2 12v4c0 .6.4 1 1 1h2"/>
+                  <circle cx="7" cy="17" r="2"/>
+                  <circle cx="17" cy="17" r="2"/>
+                </svg>
+                <span class="art-label">{{ vehicle()?.vehicleType || 'SEDAN / SUV' }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="vehicle-specs-list">
+            <div class="spec-row">
+              <span class="spec-label">Model</span>
+              <strong class="spec-val">{{ vehicle()?.make }} {{ vehicle()?.model }}</strong>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">License Plate</span>
+              <span class="plate-number-badge">{{ vehicle()?.licensePlate || 'Plate Pending' }}</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">Color</span>
+              <span class="color-badge">
+                <span class="color-dot" [style.background-color]="vehicle()?.color || '#334155'"></span>
+                {{ vehicle()?.color || 'Dark Shade' }}
+              </span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">Vehicle Type</span>
+              <span class="spec-val">{{ vehicle()?.vehicleType || 'Standard Hatchback/SUV' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. CUSTOMER CARD -->
+        <div class="sidebar-card customer-card">
+          <div class="card-title-row">
+            <span class="card-icon">👤</span>
+            <h2 class="card-heading">Customer Contact</h2>
+          </div>
+
+          <div class="customer-profile-line">
+            <div class="cust-avatar-circle">
+              @if (customer()?.avatarUrl) {
+                <img [src]="customer()?.avatarUrl" [alt]="customer()?.fullName" class="cust-avatar-img" />
+              } @else {
+                <span>{{ (customer()?.fullName || 'Customer').charAt(0).toUpperCase() }}</span>
+              }
+            </div>
+            <div class="cust-text-info">
+              <h3 class="cust-name">{{ customer()?.fullName || 'Customer User' }}</h3>
+              <span class="cust-phone">{{ customer()?.phone || '+91 98765 43210' }}</span>
+              <span class="cust-email">{{ customer()?.email || 'customer@greencarwash.com' }}</span>
+            </div>
+          </div>
+
+          <div class="customer-contact-buttons">
+            <button type="button" class="btn-contact-action btn-call" (click)="callCustomer()">
+              <span>📞 Call</span>
+            </button>
+            <button type="button" class="btn-contact-action btn-message" (click)="openMessageModal()">
+              <span>💬 Message</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. PICKUP ADDRESS CARD -->
+        <div class="sidebar-card address-card">
+          <div class="card-title-row">
+            <span class="card-icon">📍</span>
+            <h2 class="card-heading">Service Location</h2>
+          </div>
+
+          <div class="address-text-block">
+            <p class="address-line-main">{{ formattedAddress() }}</p>
+            @if (address()?.accessInstructions || address()?.parkingShadeNotes) {
+              <div class="address-gate-notes">
+                <span class="notes-icon">🚪</span>
+                <span>{{ address()?.accessInstructions || address()?.parkingShadeNotes }}</span>
+              </div>
+            }
+          </div>
+
+          <button type="button" class="btn-nav-action" (click)="openExternalNavigation()">
+            <span>🧭 Open Google Maps</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- RIGHT MAIN CONTENT COLUMN -->
+      <main class="job-main-column">
+        <!-- ============================================== -->
+        <!-- TAB 1: JOB DETAILS                             -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'DETAILS') {
+          <div class="tab-panel-container details-panel">
+            <div class="panel-header-row">
+              <div>
+                <h2 class="panel-title">Wash Package & Service Inclusions</h2>
+                <p class="panel-subtitle">Everything requested for this eco-friendly appointment.</p>
+              </div>
+              <span class="package-pill">{{ washPackage()?.name || 'Steam Wash' }}</span>
+            </div>
+
+            <div class="package-hero-card">
+              <div class="pkg-top-row">
+                <div class="pkg-info">
+                  <h3 class="pkg-title">{{ washPackage()?.name || 'Eco Steam Wash & Detailing' }}</h3>
+                  <p class="pkg-desc">{{ washPackage()?.description || 'Water-conserving steam exterior and interior disinfection.' }}</p>
+                </div>
+                <div class="pkg-price-box">
+                  <strong class="pkg-price">${{ booking()?.totalAmount || washPackage()?.price || 399 }}</strong>
+                  <span class="pkg-sub">Allocated: {{ allocatedWaterLiters() }} L Water</span>
+                </div>
+              </div>
+
+              <!-- Package Tasks -->
+              <div class="pkg-tasks-wrap">
+                <h4 class="subhead-tasks">Included Tasks ({{ checklistTotal() }} items):</h4>
+                <div class="pkg-task-tags-row">
+                  @for (t of checklist(); track t.id) {
+                    <span class="task-badge" [class.badge-done]="t.completed">
+                      @if (t.completed) { ✓ } @else { • }
+                      {{ t.name }}
+                      @if (t.mandatory) { <span class="tag-req">*</span> }
+                    </span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Customer Special Instructions -->
+            <div class="notes-card">
+              <div class="notes-header">
+                <span class="notes-icon">📝</span>
+                <h4 class="notes-title">Customer Instructions</h4>
+              </div>
+              <p class="notes-body">
+                {{ booking()?.customerInstructions || 'No special instructions given. Perform standard eco-wash detailing checklist.' }}
+              </p>
+            </div>
+
+            <!-- Booking Metadata Grid -->
+            <div class="meta-details-grid">
+              <div class="meta-item">
+                <span class="meta-label">Booking ID</span>
+                <strong class="meta-val">#GCW-{{ bookingId() }}</strong>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Schedule Time</span>
+                <strong class="meta-val">{{ formattedSchedule() }}</strong>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Water Allocated</span>
+                <strong class="meta-val">{{ allocatedWaterLiters() }} Liters</strong>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Selected Add-ons</span>
+                <strong class="meta-val">{{ appliedAddOnsNames() }}</strong>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB 2: NAVIGATION & LIVE ETA                   -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'NAVIGATION') {
+          <div class="tab-panel-container nav-panel">
+            <div class="panel-header-row">
+              <div>
+                <h2 class="panel-title">Route Guidance & Live ETA</h2>
+                <p class="panel-subtitle">Real-time GPS estimation dispatched to customer tracking screen.</p>
+              </div>
+              <div class="eta-pill-highlight">
+                <span class="eta-num">{{ etaMinutes() }}</span>
+                <span class="eta-unit">MIN ETA</span>
+              </div>
+            </div>
+
+            <!-- NAVIGATION ROUTE CARD -->
+            <div class="nav-route-card">
+              <div class="route-metrics-bar">
+                <div class="metric-box">
+                  <span class="m-label">Distance to Vehicle</span>
+                  <strong class="m-val">{{ distanceKm() }} km</strong>
+                </div>
+                <div class="metric-box">
+                  <span class="m-label">Estimated Transit</span>
+                  <strong class="m-val">{{ etaMinutes() }} minutes</strong>
+                </div>
+                <div class="metric-box">
+                  <span class="m-label">Target Address</span>
+                  <span class="m-address-short">{{ address()?.line1 || 'Customer Destination' }}</span>
+                </div>
+              </div>
+
+              <!-- Map Simulation View -->
+              <div class="map-simulation-canvas" [attr.data-status]="currentStatus()">
+                <div class="map-grid-overlay"></div>
+
+                <!-- Animated SVG Route -->
+                <svg class="route-svg-layer" viewBox="0 0 500 240" preserveAspectRatio="none">
+                  <!-- Road Glow Backdrop -->
+                  <path class="road-path road-bg" d="M 70,170 C 140,160 160,80 260,100 C 350,118 390,50 440,70" />
+                  <!-- Road Solid Underlay -->
+                  <path class="road-path road-base" d="M 70,170 C 140,160 160,80 260,100 C 350,118 390,50 440,70" />
+                  <!-- Road Animated Flowing Dash Line -->
+                  <path class="road-path road-dash" d="M 70,170 C 140,160 160,80 260,100 C 350,118 390,50 440,70" />
+                </svg>
+
+                <!-- Dynamic Washer GPS Vehicle Marker -->
+                <div
+                  class="map-marker washer-marker"
+                  [class.is-en-route]="currentStatus() === 'ON_THE_WAY'"
+                  [class.is-arrived]="['ARRIVED', 'IN_PROGRESS', 'COMPLETED'].includes(currentStatus())"
+                >
+                  <div class="marker-bubble">
+                    @if (['ARRIVED', 'IN_PROGRESS', 'COMPLETED'].includes(currentStatus())) {
+                      <span>📍 Parked at Vehicle</span>
+                    } @else if (currentStatus() === 'ON_THE_WAY') {
+                      <span class="moving-speed-tag">🚗 Driving ({{ distanceKm() }} km)</span>
+                    } @else {
+                      <span>🚗 You (Ready)</span>
+                    }
+                  </div>
+                  <div class="vehicle-car-icon">
+                    <span class="van-symbol">🚙</span>
+                    <div class="marker-pulse"></div>
+                  </div>
+                </div>
+
+                <!-- Customer Destination Marker -->
+                <div class="map-marker dest-marker">
+                  <div class="marker-bubble">📍 {{ address()?.line1 || 'Customer Vehicle' }}</div>
+                  <div class="marker-pin"></div>
+                </div>
+
+                <!-- Live Transit Stats Ribbon -->
+                <div class="map-live-stat-ribbon">
+                  <span class="stat-signal-pulse"></span>
+                  <span class="stat-text">
+                    @if (currentStatus() === 'ON_THE_WAY') {
+                      Live GPS Tracking • In Transit ({{ etaMinutes() }}m ETA)
+                    } @else if (['ARRIVED', 'IN_PROGRESS'].includes(currentStatus())) {
+                      Arrived on Location • Service Bay Active
+                    } @else {
+                      GPS Route Ready • Tap "On The Way" to Start Navigation
+                    }
+                  </span>
+                </div>
+
+                <div class="map-controls-row">
+                  <button type="button" class="btn-map-nav" (click)="openExternalNavigation()">
+                    <span>🧭 Open in Google Maps App</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ETA ADJUSTER CONTROLS -->
+            <div class="eta-control-card">
+              <h3 class="eta-control-title">Adjust Live ETA for Customer</h3>
+              <p class="eta-control-desc">Running into traffic? Adjust your ETA to keep the customer informed with accurate push updates.</p>
+
+              <div class="eta-quick-buttons">
+                <button type="button" class="btn-eta-adjust" (click)="adjustEta(-5)" [disabled]="actionInProgress() || etaMinutes() <= 5">
+                  -5 min
+                </button>
+                <button type="button" class="btn-eta-adjust" (click)="adjustEta(5)" [disabled]="actionInProgress()">
+                  +5 min
+                </button>
+                <button type="button" class="btn-eta-adjust" (click)="adjustEta(10)" [disabled]="actionInProgress()">
+                  +10 min
+                </button>
+                <button type="button" class="btn-eta-adjust" (click)="adjustEta(15)" [disabled]="actionInProgress()">
+                  +15 min
+                </button>
+                <button type="button" class="btn-eta-adjust btn-custom-toggle" (click)="showCustomEtaInput.set(!showCustomEtaInput())">
+                  <span>Custom ETA</span>
+                </button>
+              </div>
+
+              @if (showCustomEtaInput()) {
+                <div class="custom-eta-input-row">
+                  <label for="customEta">Enter Estimated Arrival (Minutes):</label>
+                  <input
+                    id="customEta"
+                    type="number"
+                    min="1"
+                    max="180"
+                    class="eta-number-input"
+                    [(ngModel)]="customEtaValue" />
+                  <button type="button" class="btn-save-eta" [disabled]="actionInProgress()" (click)="saveCustomEta()">
+                    <span>Update Backend ETA</span>
+                  </button>
+                </div>
+              }
+            </div>
+
+            <!-- ARRIVAL CONFIRMATION BUTTON -->
+            @if (currentStatus() === 'ON_THE_WAY') {
+              <div class="arrival-action-strip">
+                <button type="button" class="btn-arrived-prominent" [disabled]="actionInProgress()" (click)="markArrived()">
+                  <span>📍 I HAVE ARRIVED AT THE LOCATION</span>
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB 3: PHOTOS (BEFORE & AFTER VERIFICATION)     -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'PHOTOS') {
+          <div class="tab-panel-container photos-panel">
+            <div class="panel-header-row">
+              <div>
+                <h2 class="panel-title">Inspection & Verification Evidence</h2>
+                <p class="panel-subtitle">Mandatory photographic proof required before and after service execution.</p>
+              </div>
+              <div class="photo-completion-pill" [class.all-done]="uploadedPhotosCount() === 5 && uploadedAfterPhotosCount() === 5">
+                <span>Before: {{ uploadedPhotosCount() }}/5 • After: {{ uploadedAfterPhotosCount() }}/5</span>
+              </div>
+            </div>
+
+            <!-- SUB-PHASE TOGGLE SWITCHER -->
+            <div class="photo-phase-toggle-bar">
+              <button
+                type="button"
+                class="btn-phase-toggle"
+                [class.active]="photoPhase() === 'BEFORE'"
+                (click)="setPhotoPhase('BEFORE')">
+                <span>📸 Before-Service Photos</span>
+                <span class="phase-count-badge" [class.badge-done]="uploadedPhotosCount() === 5">
+                  {{ uploadedPhotosCount() }} / 5
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-phase-toggle"
+                [class.active]="photoPhase() === 'AFTER'"
+                (click)="setPhotoPhase('AFTER')">
+                <span>✨ After-Service Photos</span>
+                <span class="phase-count-badge" [class.badge-done]="uploadedAfterPhotosCount() === 5">
+                  {{ uploadedAfterPhotosCount() }} / 5
+                </span>
+              </button>
+            </div>
+
+            <!-- -------------------------------------------- -->
+            <!-- SUB-VIEW A: BEFORE-SERVICE PHOTOS             -->
+            <!-- -------------------------------------------- -->
+            @if (photoPhase() === 'BEFORE') {
+              <div class="photo-guidelines-banner">
+                <span class="info-icon">ℹ️</span>
+                <div class="guideline-text">
+                  <strong>Before Service Standards:</strong>
+                  <span>Capture initial dirt condition & existing dents • JPG, PNG, WEBP (max 10MB) • Required before starting wash.</span>
+                </div>
+              </div>
+
+              <!-- Fast Testing Demo Action -->
+              <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                <button
+                  type="button"
+                  style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.8125rem; font-weight: 700; color: #1e293b; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+                  (click)="fillDemoPhotos('BEFORE')">
+                  <span>📸 Auto-Fill 5 Demo Dirty Photos (Front, Back, Right, Left, Top)</span>
+                </button>
+              </div>
+
+              <!-- 5-PHOTO GRID: BEFORE -->
+              <div class="photos-five-grid">
+                @for (slot of beforePhotos(); track slot.id) {
+                  <div class="photo-slot-card" [ngClass]="'status-' + slot.status.toLowerCase()">
+                    <div class="slot-header-bar">
+                      <span class="slot-name">{{ slot.label }}</span>
+                      <span class="slot-status-badge" [ngClass]="'badge-' + slot.status.toLowerCase()">
+                        @if (slot.status === 'UPLOADED') { ✓ Uploaded }
+                        @else if (slot.status === 'UPLOADING') { Uploading... }
+                        @else if (slot.status === 'FAILED') { Failed ⚠️ }
+                        @else { Not Uploaded }
+                      </span>
+                    </div>
+
+                    <div class="slot-preview-box">
+                      @if (slot.previewUrl) {
+                        <img [src]="slot.previewUrl" [alt]="slot.label" class="slot-img" />
+                        @if (slot.status === 'UPLOADING') {
+                          <div class="upload-progress-overlay">
+                            <div class="upload-spinner"></div>
+                            <div class="progress-bar-container">
+                              <div class="progress-bar-fill" [style.width.%]="slot.uploadProgress"></div>
+                            </div>
+                            <span class="progress-txt">{{ slot.uploadProgress }}%</span>
+                          </div>
+                        }
+                      } @else {
+                        <div class="slot-empty-state">
+                          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                          </svg>
+                          <span class="slot-guidance">{{ slot.sublabel }}</span>
+                        </div>
+                      }
+                    </div>
+
+                    @if (slot.errorMessage) {
+                      <div class="slot-error-msg">
+                        <span>⚠️ {{ slot.errorMessage }}</span>
+                      </div>
+                    }
+
+                    <div class="slot-actions-bar">
+                      <label class="btn-photo-upload" [class.btn-replace]="slot.status === 'UPLOADED'">
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          capture="environment"
+                          class="hidden-file-input"
+                          (change)="onPhotoFileSelected($event, slot.id)" />
+                        <span>{{ slot.status === 'UPLOADED' ? '🔄 Replace Photo' : '📷 Take / Upload Photo' }}</span>
+                      </label>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- PRE-EXISTING DAMAGE & CONDITION NOTES -->
+              <div class="condition-report-card">
+                <h3 class="condition-card-title">Pre-Existing Damage & Vehicle Notes</h3>
+                <p class="condition-card-desc">Note any existing scratches, dents, cracked glass, or interior stains to protect against liability claims.</p>
+
+                <div class="damage-checkbox-row">
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      [checked]="hasPreExistingDamage()"
+                      (change)="hasPreExistingDamage.set(!hasPreExistingDamage())" />
+                    <span>Observed pre-existing vehicle scratches, dents, or damage</span>
+                  </label>
+                </div>
+
+                @if (hasPreExistingDamage()) {
+                  <div class="damage-input-wrap">
+                    <label for="damageNotes">Damage Location & Description:</label>
+                    <textarea
+                      id="damageNotes"
+                      rows="3"
+                      class="damage-textarea"
+                      placeholder="e.g. Minor scratch on rear-left bumper (~4cm), right side-mirror scuff..."
+                      [(ngModel)]="damageNotes">
+                    </textarea>
+                  </div>
+                }
+
+                <button
+                  type="button"
+                  class="btn-save-inspection"
+                  [disabled]="actionInProgress() || inspectionSaved()"
+                  (click)="saveVehicleInspectionNotes()">
+                  <span>{{ inspectionSaved() ? '✓ Inspection Report Saved' : '📋 Submit Vehicle Condition Report' }}</span>
+                </button>
+              </div>
+            }
+
+            <!-- -------------------------------------------- -->
+            <!-- SUB-VIEW B: AFTER-SERVICE PHOTOS (STEP 3)    -->
+            <!-- -------------------------------------------- -->
+            @if (photoPhase() === 'AFTER') {
+              <div class="photo-guidelines-banner banner-after">
+                <span class="info-icon">✨</span>
+                <div class="guideline-text">
+                  <strong>After Service Quality Verification:</strong>
+                  <span>Upload high-resolution finished photos of all 5 vehicle sides. Demonstrates perfection to customer and unlocks final service completion.</span>
+                </div>
+              </div>
+
+              <!-- Fast Testing Demo Action -->
+              <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                <button
+                  type="button"
+                  style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.8125rem; font-weight: 700; color: #065f46; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+                  (click)="fillDemoPhotos('AFTER')">
+                  <span>✨ Auto-Fill 5 Demo Clean Photos (Front, Back, Right, Left, Top)</span>
+                </button>
+              </div>
+
+              <!-- 5-PHOTO GRID: AFTER -->
+              <div class="photos-five-grid">
+                @for (slot of afterPhotos(); track slot.id) {
+                  <div class="photo-slot-card after-slot-card" [ngClass]="'status-' + slot.status.toLowerCase()">
+                    <div class="slot-header-bar">
+                      <span class="slot-name">{{ slot.label }}</span>
+                      <span class="slot-status-badge" [ngClass]="'badge-' + slot.status.toLowerCase()">
+                        @if (slot.status === 'UPLOADED') { ✓ Completed }
+                        @else if (slot.status === 'UPLOADING') { Uploading... }
+                        @else if (slot.status === 'FAILED') { Failed ⚠️ }
+                        @else { Pending }
+                      </span>
+                    </div>
+
+                    <div class="slot-preview-box">
+                      @if (slot.previewUrl) {
+                        <img [src]="slot.previewUrl" [alt]="slot.label" class="slot-img" />
+                        @if (slot.status === 'UPLOADING') {
+                          <div class="upload-progress-overlay">
+                            <div class="upload-spinner"></div>
+                            <div class="progress-bar-container">
+                              <div class="progress-bar-fill" [style.width.%]="slot.uploadProgress"></div>
+                            </div>
+                            <span class="progress-txt">{{ slot.uploadProgress }}%</span>
+                          </div>
+                        }
+                      } @else {
+                        <div class="slot-empty-state">
+                          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.5">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                          </svg>
+                          <span class="slot-guidance">{{ slot.sublabel }}</span>
+                        </div>
+                      }
+                    </div>
+
+                    @if (slot.errorMessage) {
+                      <div class="slot-error-msg">
+                        <span>⚠️ {{ slot.errorMessage }}</span>
+                      </div>
+                    }
+
+                    <div class="slot-actions-bar">
+                      <label class="btn-photo-upload btn-upload-after" [class.btn-replace]="slot.status === 'UPLOADED'">
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          capture="environment"
+                          class="hidden-file-input"
+                          (change)="onAfterPhotoFileSelected($event, slot.id)" />
+                        <span>{{ slot.status === 'UPLOADED' ? '🔄 Replace After Photo' : '📷 Take / Upload After Photo' }}</span>
+                      </label>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- WATER SAVED CONSERVATION IMPACT BANNER AFTER UPLOADING AFTER-WASH PHOTOS -->
+              @if (uploadedAfterPhotosCount() >= 1) {
+                <div class="water-saved-congrats-card">
+                  <div class="congrats-head">
+                    <span class="eco-water-icon">💧</span>
+                    <div>
+                      <strong class="congrats-title">Water Conservation Impact for this Wash</strong>
+                      <span class="congrats-subtitle">Eco steam technology significantly reduces fresh water consumption.</span>
+                    </div>
+                  </div>
+                  <div class="congrats-metrics-grid">
+                    <div class="congrats-metric-col">
+                      <span class="cm-label">Traditional Wash:</span>
+                      <strong class="cm-val">150 L</strong>
+                    </div>
+                    <div class="congrats-operator">−</div>
+                    <div class="congrats-metric-col">
+                      <span class="cm-label">Eco Water Used:</span>
+                      <strong class="cm-val cm-used">{{ waterUsageData()?.actualWaterUsedLiters != null ? waterUsageData()?.actualWaterUsedLiters : waterUsageLiters() }} L</strong>
+                    </div>
+                    <div class="congrats-operator">=</div>
+                    <div class="congrats-metric-col highlight-saved-col">
+                      <span class="cm-label">Clean Water Saved:</span>
+                      <strong class="cm-val cm-saved-large">
+                        🎉 {{ waterUsageData()?.waterSavedVsTraditionalLiters != null ? waterUsageData()?.waterSavedVsTraditionalLiters : Math.max(0, 150 - waterUsageLiters()) }} Liters Saved!
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- SERVICE READINESS & COMPLETION GATEWAY -->
+              <div class="completion-gate-card">
+                <div class="gate-header">
+                  <h3 class="gate-title">Service Verification & Completion Gate</h3>
+                  <p class="gate-desc">Both checklist tasks and photo evidence must be complete to verify this job on the backend.</p>
+                </div>
+
+                <div class="gate-checklist-metrics">
+                  <div class="gate-check-item" [class.gate-pass]="mandatoryPendingCount() === 0">
+                    <span class="gate-icon">{{ mandatoryPendingCount() === 0 ? '✓' : '⏳' }}</span>
+                    <span class="gate-label">Mandatory Checklist:</span>
+                    <strong class="gate-val">{{ mandatoryCompletedCount() }} / {{ mandatoryTasksCount() }} Done</strong>
+                  </div>
+
+                  <div class="gate-check-item" [class.gate-pass]="uploadedPhotosCount() >= 1">
+                    <span class="gate-icon">{{ uploadedPhotosCount() >= 1 ? '✓' : '⏳' }}</span>
+                    <span class="gate-label">Before Photos:</span>
+                    <strong class="gate-val">{{ uploadedPhotosCount() }} / 5 Verified</strong>
+                  </div>
+
+                  <div class="gate-check-item" [class.gate-pass]="uploadedAfterPhotosCount() >= 1">
+                    <span class="gate-icon">{{ uploadedAfterPhotosCount() >= 1 ? '✓' : '⏳' }}</span>
+                    <span class="gate-label">After Photos:</span>
+                    <strong class="gate-val">{{ uploadedAfterPhotosCount() }} / 5 Uploaded</strong>
+                  </div>
+
+                  <div class="gate-check-item" [class.gate-pass]="waterUsageData() != null">
+                    <span class="gate-icon">{{ waterUsageData() != null ? '✓' : '💧' }}</span>
+                    <span class="gate-label">Water Usage:</span>
+                    <strong class="gate-val">
+                      {{ waterUsageData() ? waterUsageData()?.waterSavedLiters + 'L saved' : waterUsageLiters() + 'L logged' }}
+                    </strong>
+                  </div>
+                </div>
+
+                <!-- PAYMENT REQUIREMENT CHECK -->
+                @if (!cashCollectedSuccess() && (!booking()?.paymentConfirmedAt)) {
+                  <div class="awaiting-payment-banner">
+                    <span class="pay-warn-icon">⏳</span>
+                    <div class="pay-warn-info">
+                      <strong>Customer Payment Pending (${{ booking()?.totalAmount }})</strong>
+                      <span>Service will reach COMPLETED once customer completes payment or cash collection is recorded.</span>
+                    </div>
+                    @if (isCashPayment()) {
+                      <button type="button" class="btn-collect-cash-inline" [disabled]="recordingCash()" (click)="collectCashPayment()">
+                        {{ recordingCash() ? 'Recording...' : '💵 Collect Cash Payment' }}
+                      </button>
+                    }
+                  </div>
+                }
+
+                <div class="gate-cta-row">
+                  <button
+                    type="button"
+                    class="btn-complete-service-prominent"
+                    [disabled]="completingService() || currentStatus() === 'COMPLETED'"
+                    (click)="completeService()">
+                    @if (completingService()) {
+                      <span class="spinner-inline"></span>
+                      <span>Verifying with Server...</span>
+                    } @else {
+                      <span>🏁 COMPLETE SERVICE & SUBMIT VERIFICATION</span>
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB 4: SERVICE CHECKLIST (REAL BACKEND)        -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'CHECKLIST') {
+          <div class="tab-panel-container checklist-panel">
+            <div class="panel-header-row">
+              <div>
+                <h2 class="panel-title">Dynamic Service Quality Checklist</h2>
+                <p class="panel-subtitle">Package and approved add-on tasks loaded directly from database.</p>
+              </div>
+              <div class="checklist-header-actions">
+                <button type="button" class="btn-sync-checklist" [disabled]="reloadingChecklist()" (click)="reloadChecklist()">
+                  <span>{{ reloadingChecklist() ? 'Syncing...' : '🔄 Sync from Server' }}</span>
+                </button>
+                <div class="checklist-count-chip">
+                  <strong>{{ checklistCompletedCount() }} / {{ checklistTotal() }}</strong> Done
+                </div>
+              </div>
+            </div>
+
+            <!-- MANDATORY TASKS PENDING WARNING -->
+            @if (mandatoryPendingCount() > 0 && currentStatus() === 'IN_PROGRESS') {
+              <div class="mandatory-warning-banner">
+                <span class="warn-icon">⚠️</span>
+                <span>
+                  <strong>{{ mandatoryPendingCount() }} mandatory task(s) remaining.</strong>
+                  All required tasks must be completed before service verification.
+                </span>
+              </div>
+            }
+
+            <!-- PREMIUM SERVICE PROGRESS VISUALIZATION -->
+            <div class="progress-hero-card">
+              <div class="progress-header-line">
+                <div class="progress-big-number">
+                  <strong class="percent-val">{{ checklistPercent() }}%</strong>
+                  <span class="percent-lbl">Service Progress</span>
+                </div>
+                <div class="progress-details-pill">
+                  <span class="pill-stat"><strong>{{ checklistCompletedCount() }}</strong> Completed</span>
+                  <span class="pill-divider">•</span>
+                  <span class="pill-stat"><strong>{{ checklistRemainingCount() }}</strong> Remaining</span>
+                </div>
+              </div>
+
+              <!-- Animated Progress Bar -->
+              <div class="progress-track-wrapper">
+                <div class="progress-fill-bar" [style.width.%]="checklistPercent()">
+                  <span class="fill-sheen"></span>
+                </div>
+              </div>
+
+              @if (currentStatus() !== 'IN_PROGRESS' && currentStatus() !== 'COMPLETED') {
+                <div class="status-warning-banner">
+                  <span>⚠️ Service has not been started yet. Click <strong>"START SERVICE"</strong> above to begin completing checklist tasks.</span>
+                </div>
+              }
+            </div>
+
+            <!-- TASKS LIST -->
+            <div class="checklist-items-stack">
+              @if (checklist().length === 0) {
+                <div class="checklist-empty-state">
+                  <div class="spinner-small"></div>
+                  <p>Loading dynamic tasks for booking #GCW-{{ bookingId() }}...</p>
+                </div>
+              }
+
+              @for (item of checklist(); track item.id) {
+                <div class="checklist-item-row" [class.item-done]="item.completed" [class.item-mandatory]="item.mandatory">
+                  <div class="item-order-circle">
+                    @if (item.completed) {
+                      <span class="check-mark">✓</span>
+                    } @else {
+                      <span>{{ item.displayOrder || ($index + 1) }}</span>
+                    }
+                  </div>
+
+                  <div class="item-content-col">
+                    <div class="item-title-line">
+                      <h4 class="item-name" [class.text-strikethrough]="item.completed">{{ item.name }}</h4>
+
+                      <!-- Mandatory vs Optional Badge -->
+                      @if (item.mandatory) {
+                        <span class="badge-mandatory">REQUIRED</span>
+                      } @else {
+                        <span class="badge-optional">OPTIONAL</span>
+                      }
+                    </div>
+
+                    <div class="item-status-footnote">
+                      @if (item.completed) {
+                        <span class="status-done-text">
+                          ✓ Completed
+                          @if (item.completedAt) {
+                            at {{ item.completedAt | date:'shortTime' }}
+                          }
+                        </span>
+                      } @else {
+                        <span class="status-pending-text">⏳ Pending Completion</span>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Task Action Button -->
+                  <div class="item-action-col">
+                    @if (item.completed) {
+                      <div class="completed-check-badge">
+                        <span>Done ✓</span>
+                      </div>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn-complete-task"
+                        [disabled]="currentStatus() !== 'IN_PROGRESS' || completingItemId() === item.id"
+                        (click)="completeChecklistItem(item)">
+                        @if (completingItemId() === item.id) {
+                          <span class="spinner-inline"></span>
+                          <span>Saving...</span>
+                        } @else {
+                          <span>Mark Done ✓</span>
+                        }
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- CHECKLIST COMPLETION BANNER -->
+            @if (allMandatoryCompleted() && currentStatus() === 'IN_PROGRESS') {
+              <div class="checklist-ready-banner">
+                <div class="ready-text">
+                  <h4>✓ All Required Tasks Finished!</h4>
+                  <p>Proceed to After-Service Photos or finalize completion.</p>
+                </div>
+                <button
+                  type="button"
+                  class="btn-cta-complete-glow"
+                  [disabled]="completingService()"
+                  (click)="completeService()">
+                  @if (completingService()) {
+                    <span class="spinner-inline"></span>
+                    <span>Completing...</span>
+                  } @else {
+                    <span>🏁 COMPLETE SERVICE</span>
+                  }
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB 5: WATER CONSERVATION (STEP 1: WATER USAGE)-->
+        <!-- ============================================== -->
+        @if (activeTab() === 'WATER') {
+          <div class="tab-panel-container water-panel">
+            <div class="panel-header-row">
+              <div>
+                <h2 class="panel-title">Water Consumption & Eco Conservation</h2>
+                <p class="panel-subtitle">Official GreenCarWash Water Usage & Municipal Savings Metric.</p>
+              </div>
+              @if (waterUsageData()) {
+                <span class="water-verified-chip">✓ Verified by Backend</span>
+              }
+            </div>
+
+            <!-- WATER METRICS GRID -->
+            <div class="water-stats-grid">
+              <!-- 1. ALLOCATED WATER -->
+              <div class="water-kpi-card bg-blue">
+                <span class="kpi-label">Allocated Water</span>
+                <strong class="kpi-val">{{ waterUsageData()?.allocatedWaterLiters ?? allocatedWaterLiters() }} L</strong>
+                <span class="kpi-sub">Package allowance budget</span>
+              </div>
+
+              <!-- 2. ACTUAL USAGE -->
+              <div class="water-kpi-card bg-emerald">
+                <span class="kpi-label">Actual Usage</span>
+                <strong class="kpi-val">{{ waterUsageData()?.actualWaterUsedLiters ?? waterUsageLiters() }} L</strong>
+                <span class="kpi-sub">High-efficiency steam</span>
+              </div>
+
+              <!-- 3. WATER SAVED -->
+              <div class="water-kpi-card bg-purple">
+                <span class="kpi-label">Water Saved</span>
+                <strong class="kpi-val">
+                  @if (waterUsageData()) {
+                    {{ waterUsageData()?.waterSavedLiters }} L
+                  } @else {
+                    {{ Math.max(0, allocatedWaterLiters() - waterUsageLiters()) }} L*
+                  }
+                </strong>
+                <span class="kpi-sub">
+                  {{ waterUsageData() ? 'Authoritative backend calculation' : '*Calculated upon save' }}
+                </span>
+              </div>
+
+              <!-- 4. SAVED VS TRADITIONAL BASELINE -->
+              <div class="water-kpi-card bg-teal">
+                <span class="kpi-label">Saved vs Tunnel Wash</span>
+                <strong class="kpi-val">
+                  +{{ waterUsageData()?.waterSavedVsTraditionalLiters ?? Math.max(0, 150 - waterUsageLiters()) }} L
+                </strong>
+                <span class="kpi-sub">150L municipal commercial baseline</span>
+              </div>
+            </div>
+
+            <!-- WATER ADJUSTER & BACKEND RECORDING -->
+            <div class="water-adjuster-card">
+              <h3 class="adjuster-title">Enter Actual Water Consumption</h3>
+              <p class="adjuster-desc">
+                Log the metered water quantity used for this wash. Must not exceed the allocated budget of
+                <strong>{{ allocatedWaterLiters() }} L</strong>.
+              </p>
+
+              <!-- Minus / Value / Plus Controls -->
+              <div class="adjuster-controls">
+                <button type="button" class="btn-water-delta" (click)="changeWaterUsage(-10)">-10 L</button>
+                <button type="button" class="btn-water-delta" (click)="changeWaterUsage(-5)">-5 L</button>
+                <button type="button" class="btn-water-delta" (click)="changeWaterUsage(-1)">-1 L</button>
+
+                <div class="water-display-box" [class.box-warning]="waterUsageLiters() >= allocatedWaterLiters()">
+                  <strong class="water-number">{{ waterUsageLiters() }}</strong>
+                  <span class="water-unit-lbl">LITERS</span>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn-water-delta"
+                  [disabled]="waterUsageLiters() >= allocatedWaterLiters()"
+                  (click)="changeWaterUsage(1)">
+                  +1 L
+                </button>
+                <button
+                  type="button"
+                  class="btn-water-delta"
+                  [disabled]="waterUsageLiters() + 5 > allocatedWaterLiters()"
+                  (click)="changeWaterUsage(5)">
+                  +5 L
+                </button>
+                <button
+                  type="button"
+                  class="btn-water-delta"
+                  [disabled]="waterUsageLiters() + 10 > allocatedWaterLiters()"
+                  (click)="changeWaterUsage(10)">
+                  +10 L
+                </button>
+              </div>
+
+              <!-- Validation Warning -->
+              @if (waterValidationWarning()) {
+                <div class="water-warning-msg">
+                  <span>⚠️ {{ waterValidationWarning() }}</span>
+                </div>
+              }
+
+              <!-- Save Button -->
+              <button
+                type="button"
+                class="btn-save-water"
+                [disabled]="actionInProgress() || waterUsageLiters() > allocatedWaterLiters()"
+                (click)="saveWaterUsage()">
+                @if (actionInProgress()) {
+                  <span class="spinner-inline"></span>
+                  <span>Saving to Backend...</span>
+                } @else {
+                  <span>💧 Save Water Usage to Backend</span>
+                }
+              </button>
+
+              @if (waterUsageData()) {
+                <div class="water-success-receipt">
+                  <span class="receipt-icon">✓</span>
+                  <span>
+                    Recorded at {{ waterUsageData()?.recordedAt | date:'mediumTime' }}.
+                    Wash Method: <strong>{{ waterUsageData()?.washMethod || 'STANDARD' }}</strong>.
+                    Backend Water Saved: <strong>{{ waterUsageData()?.waterSavedLiters }} L</strong>.
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB 6: ADDITIONAL ADD-ON REQUESTS (STEP 2)     -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'ADDONS') {
+          <div class="tab-panel-container addons-panel">
+            <div class="panel-header-row">
+              <div>
+                <h2 class="panel-title">Request Additional Add-on Services</h2>
+                <p class="panel-subtitle">Request mid-service add-ons while at the customer location. Subject to Admin approval and customer payment.</p>
+              </div>
+            </div>
+
+            <!-- SECTION A: ACTIVE CATALOG ADD-ONS -->
+            <div class="addons-catalogue-section">
+              <h3 class="section-title">1. Select Add-on from Official Catalogue</h3>
+              <p class="section-desc">Prices are authoritative and loaded directly from backend admin catalogue.</p>
+
+              @if (loadingAddons()) {
+                <div class="loading-addons-box">
+                  <div class="spinner-small"></div>
+                  <p>Loading active catalogue add-ons...</p>
+                </div>
+              }
+
+              <div class="addons-cards-grid">
+                @for (addon of activeAddonsList(); track addon.id) {
+                  <div
+                    class="addon-catalog-card"
+                    [class.selected]="selectedAddonId() === addon.id"
+                    (click)="selectAddon(addon)">
+                    <div class="addon-card-top">
+                      <div class="addon-icon-box">
+                        @if (addon.name.toLowerCase().includes('vacuum')) { 🌪️ }
+                        @else if (addon.name.toLowerCase().includes('tyre') || addon.name.toLowerCase().includes('wheel')) { 🛞 }
+                        @else if (addon.name.toLowerCase().includes('wax') || addon.name.toLowerCase().includes('polish')) { ✨ }
+                        @else if (addon.name.toLowerCase().includes('dashboard') || addon.name.toLowerCase().includes('interior')) { 🧴 }
+                        @else { 🧼 }
+                      </div>
+                      <div class="addon-price-tag">
+                        <strong>${{ addon.price }}</strong>
+                      </div>
+                    </div>
+
+                    <h4 class="addon-name">{{ addon.name }}</h4>
+                    <p class="addon-desc">{{ addon.description || 'Professional car care detailing enhancement.' }}</p>
+
+                    <div class="addon-card-footer">
+                      <button type="button" class="btn-select-addon" [class.btn-selected]="selectedAddonId() === addon.id">
+                        {{ selectedAddonId() === addon.id ? '✓ Selected' : 'Select Service' }}
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- SECTION B: REQUEST SUBMISSION FORM -->
+            <div class="addon-request-form-card">
+              <h3 class="section-title">2. Reason for Additional Service</h3>
+              <p class="section-desc">Explain why this service is recommended for the vehicle.</p>
+
+              @if (selectedAddonId()) {
+                <div class="selected-addon-callout">
+                  <span class="callout-label">Selected Add-on:</span>
+                  <strong>{{ activeAddonsList().find(a => a.id === selectedAddonId())?.name }}</strong>
+                  <span class="callout-price">(${{ activeAddonsList().find(a => a.id === selectedAddonId())?.price }})</span>
+                </div>
+              }
+
+              <div class="reason-input-group">
+                <label for="addonReason">Reason for Additional Request (Mandatory):</label>
+                <textarea
+                  id="addonReason"
+                  rows="3"
+                  class="reason-textarea"
+                  placeholder="e.g. Customer requested deep dashboard conditioning and leather seat protection due to heavy sun exposure..."
+                  [(ngModel)]="addonReason">
+                </textarea>
+              </div>
+
+              <button
+                type="button"
+                class="btn-send-addon-req"
+                [disabled]="!selectedAddonId() || !addonReason().trim() || requestingAddon() || currentStatus() !== 'IN_PROGRESS'"
+                (click)="sendAddonRequest()">
+                @if (requestingAddon()) {
+                  <span class="spinner-inline"></span>
+                  <span>Submitting to Admin...</span>
+                } @else {
+                  <span>📩 SEND REQUEST TO ADMIN</span>
+                }
+              </button>
+
+              @if (currentStatus() !== 'IN_PROGRESS') {
+                <p class="addon-status-notice">
+                  ℹ️ Additional add-ons can only be requested while the wash service is actively <strong>IN_PROGRESS</strong>.
+                </p>
+              }
+            </div>
+
+            <!-- SECTION C: REQUEST STATUS TRACKING (STEP 2: ADD-ON STATUS) -->
+            <div class="addon-status-section">
+              <div class="section-header-row">
+                <h3 class="section-title">3. Mid-Service Add-on Requests & Status</h3>
+                <button type="button" class="btn-sync-addons" (click)="loadRequestedAddons(bookingId()!)">
+                  🔄 Refresh Status
+                </button>
+              </div>
+
+              @if (requestedAddons().length === 0) {
+                <div class="empty-addons-history">
+                  <span class="empty-icon">📋</span>
+                  <p>No additional add-on requests submitted yet for this booking.</p>
+                </div>
+              } @else {
+                <div class="requested-addons-stack">
+                  @for (req of requestedAddons(); track req.id) {
+                    <div class="requested-addon-row">
+                      <div class="req-left">
+                        <div class="req-title-row">
+                          <h4 class="req-addon-name">{{ req.addOnName }}</h4>
+                          <span class="req-price-badge">${{ req.addOnPrice || req.price }}</span>
+                        </div>
+                        <p class="req-reason">"{{ req.reason }}"</p>
+                        <span class="req-date">Requested at {{ req.createdAt | date:'medium' }}</span>
+                      </div>
+
+                      <div class="req-right">
+                        <!-- REAL BACKEND STATUS BADGE -->
+                        <span class="addon-status-pill" [ngClass]="getAddonStatusBadge(req).class">
+                          {{ getAddonStatusBadge(req).label }}
+                        </span>
+                        @if (req.reviewNotes) {
+                          <span class="admin-review-note">Admin note: {{ req.reviewNotes }}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ============================================== -->
+        <!-- TAB 7: PAYMENT & COD CASH COLLECTION           -->
+        <!-- ============================================== -->
+        @if (activeTab() === 'PAYMENT') {
+          <div class="tab-panel-container payment-panel">
+            <div class="panel-header-row">
+              <div>
+                <h2 class="panel-title">Payment & Collection Status</h2>
+                <p class="panel-subtitle">Authoritative escrow & COD cash settlement synced with payment-service.</p>
+              </div>
+              <span class="payment-badge-pill" [class.paid]="isPaymentSettled()" [class.due]="!isPaymentSettled()">
+                {{ isPaymentSettled() ? '✓ PAID' : 'PENDING COLLECTION' }}
+              </span>
+            </div>
+
+            <div class="payment-overview-grid">
+              <div class="pay-card total-card">
+                <span class="pay-lbl">Total Booking Amount</span>
+                <strong class="pay-val">${{ booking()?.totalAmount || 399 }}</strong>
+                <span class="pay-hint">Customer Total Charge</span>
+              </div>
+              <div class="pay-card payout-card">
+                <span class="pay-lbl">Washer Payout (70%)</span>
+                <strong class="pay-val pay-green">${{ washerPayout() }}</strong>
+                <span class="pay-hint">Credited upon completion</span>
+              </div>
+              <div class="pay-card method-card">
+                <span class="pay-lbl">Payment Method</span>
+                <strong class="pay-val">{{ isCashPayment() ? 'Cash on Delivery (COD)' : 'Online / Card / Wallet' }}</strong>
+                <span class="pay-hint">{{ isCashPayment() ? 'Collect cash at location' : 'Pre-authorized via Escrow' }}</span>
+              </div>
+            </div>
+
+            <!-- PAYMENT STATUS CALLOUT -->
+            @if (isPaymentSettled()) {
+              <div class="payment-settled-box">
+                <div class="settled-icon">✓</div>
+                <div class="settled-text">
+                  <h3>Payment Completed & Recorded</h3>
+                  <p>
+                    @if (isCashPayment()) {
+                      Cash collection of <strong>${{ booking()?.totalAmount || 399 }}</strong> has been verified and registered on the backend.
+                    } @else {
+                      Customer prepaid via online escrow. Funds will be released to your earnings upon service completion.
+                    }
+                  </p>
+                </div>
+              </div>
+            } @else {
+              <!-- CASH COLLECTION OR MARK NOT RECEIVED -->
+              <div class="cod-collection-box">
+                <div class="cod-header">
+                  <div class="cod-icon">💵</div>
+                  <div>
+                    <h3>Payment Status: NOT RECEIVED / PENDING</h3>
+                    <p>Bill Amount: <strong>${{ booking()?.totalAmount || 399 }}</strong>. Collect cash now, OR complete service and let customer pay online.</p>
+                  </div>
+                </div>
+
+                <div class="cod-instruction-steps">
+                  <div class="cod-step-item">
+                    <span class="cod-step-num">A</span>
+                    <span><strong>Customer pays cash:</strong> Count and click <strong>[ CASH RECEIVED ]</strong> below to mark as PAID.</span>
+                  </div>
+                  <div class="cod-step-item">
+                    <span class="cod-step-num">B</span>
+                    <span><strong>Customer pays online:</strong> You can complete service now; it will be marked as <strong>PAYMENT NOT RECEIVED</strong> until customer pays.</span>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
+                  <button
+                    type="button"
+                    class="btn-cash-collected"
+                    style="flex: 1; min-width: 200px;"
+                    [disabled]="recordingCash()"
+                    (click)="collectCashPayment()">
+                    @if (recordingCash()) {
+                      <span class="spinner-inline"></span>
+                      <span>Recording Cash Payment...</span>
+                    } @else {
+                      <span>💵 [ CASH RECEIVED - ${{ booking()?.totalAmount || 399 }} ]</span>
+                    }
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-mark-unpaid"
+                    style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 600; padding: 0.75rem 1rem; cursor: pointer;"
+                    (click)="showToast('ℹ️ Payment remains marked as NOT RECEIVED. Customer can pay online anytime.')">
+                    <span>⏳ Keep as NOT RECEIVED</span>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </main>
+    </div>
+
+    <!-- STICKY BOTTOM ACTION CTA FOR MOBILE SCREENS -->
+    <div class="mobile-sticky-bottom-bar">
+      <div class="mobile-bar-inner">
+        <div class="mobile-info-chip">
+          <span class="m-status">{{ currentStatus() }}</span>
+          <span class="m-eta">⏱️ {{ etaMinutes() }}m • {{ distanceKm() }}km</span>
+        </div>
+
+        <div class="mobile-cta-actions">
+          @if (currentStatus() === 'ACCEPTED') {
+            <button type="button" class="btn-m-cta btn-m-start" [disabled]="actionInProgress()" (click)="startTripOnTheWay()">
+              <span>🚗 START TRIP</span>
+            </button>
+          } @else if (currentStatus() === 'ON_THE_WAY') {
+            <button type="button" class="btn-m-cta btn-m-arrived" [disabled]="actionInProgress()" (click)="markArrived()">
+              <span>📍 I HAVE ARRIVED</span>
+            </button>
+          } @else if (currentStatus() === 'ARRIVED') {
+            <button type="button" class="btn-m-cta btn-m-startwash" [disabled]="actionInProgress()" (click)="startService()">
+              <span>🚿 START SERVICE</span>
+            </button>
+          } @else if (currentStatus() === 'IN_PROGRESS' && allMandatoryCompleted() && uploadedAfterPhotosCount() >= 1) {
+            <button type="button" class="btn-m-cta btn-m-complete" [disabled]="completingService()" (click)="completeService()">
+              <span>🏁 COMPLETE SERVICE</span>
+            </button>
+          } @else {
+            <button type="button" class="btn-m-cta btn-m-checklist" (click)="setTab('CHECKLIST')">
+              <span>✅ CHECKLIST ({{ checklistCompletedCount() }}/{{ checklistTotal() }})</span>
+            </button>
+          }
+
+          <button type="button" class="btn-m-call" (click)="callCustomer()" aria-label="Call Customer">
+            <span>📞</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- STEP 7 & 8: COMPLETION CONFIRMATION MODAL      -->
+  <!-- ============================================== -->
+  @if (showCompletionModal()) {
+    <div class="modal-backdrop celebration-backdrop">
+      <div class="celebration-modal-card">
+        <div class="celebration-header">
+          <div class="celebration-check-circle">
+            <span class="check-icon">✓</span>
+          </div>
+          <h2 class="celebration-title">SERVICE COMPLETED!</h2>
+          <p class="celebration-subtitle">Great work! All tasks verified, water logged, and booking completed on the backend.</p>
+        </div>
+
+        <div class="celebration-details-grid">
+          <div class="cel-detail-row">
+            <span class="cel-label">Booking Reference:</span>
+            <strong class="cel-val">#GCW-{{ bookingId() }}</strong>
+          </div>
+          <div class="cel-detail-row">
+            <span class="cel-label">Customer Name:</span>
+            <strong class="cel-val">{{ customer()?.fullName || 'Valued Customer' }}</strong>
+          </div>
+          <div class="cel-detail-row">
+            <span class="cel-label">Vehicle:</span>
+            <strong class="cel-val">{{ vehicle()?.make }} {{ vehicle()?.model }} ({{ vehicle()?.licensePlate || 'Plate Pending' }})</strong>
+          </div>
+          <div class="cel-detail-row">
+            <span class="cel-label">Wash Package:</span>
+            <strong class="cel-val">{{ washPackage()?.name || 'Eco Steam Wash & Detailing' }}</strong>
+          </div>
+          <div class="cel-detail-row">
+            <span class="cel-label">Applied Add-ons:</span>
+            <strong class="cel-val">{{ appliedAddOnsNames() }}</strong>
+          </div>
+          <div class="cel-detail-row highlight-green">
+            <span class="cel-label">Water Saved:</span>
+            <strong class="cel-val cel-saved">
+              {{ waterUsageData()?.waterSavedLiters != null ? waterUsageData()?.waterSavedLiters + ' Liters' : Math.max(0, allocatedWaterLiters() - waterUsageLiters()) + ' Liters' }}
+            </strong>
+          </div>
+          <div class="cel-detail-row highlight-payout">
+            <span class="cel-label">Washer Earnings:</span>
+            <strong class="cel-val cel-payout">${{ washerPayout() }}</strong>
+          </div>
+          <div class="cel-detail-row" [style.background]="isPaymentSettled() ? '#f0fdf4' : '#fffbeb'" [style.border]="isPaymentSettled() ? '1px solid #bbf7d0' : '1px solid #fef08a'" style="border-radius: 8px; padding: 0.6rem 0.85rem; margin-top: 0.25rem;">
+            <span class="cel-label" style="font-weight: 700; color: #1e293b;">Payment Status:</span>
+            <strong class="cel-val">
+              @if (isPaymentSettled()) {
+                <span style="color: #15803d; font-weight: 800;">✓ PAID (${{ booking()?.totalAmount || 399 }})</span>
+              } @else {
+                <span style="color: #b45309; font-weight: 800;">⏳ PAYMENT NOT RECEIVED (Customer Bill Pending)</span>
+              }
+            </strong>
+          </div>
+        </div>
+
+        <div class="celebration-actions-row">
+          <button type="button" class="btn-celebration-home" (click)="goToHome()">
+            <span>🏠 BACK TO HOME</span>
+          </button>
+          <button type="button" class="btn-celebration-jobs" (click)="goToJobs()">
+            <span>📋 VIEW COMPLETED JOBS</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MESSAGING MODAL -->
+  @if (showMessageModal()) {
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">💬 Message Customer</h3>
+          <button type="button" class="btn-modal-close" (click)="closeMessageModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">Send an update message to <strong>{{ customer()?.fullName || 'the customer' }}</strong> regarding booking #GCW-{{ bookingId() }}.</p>
+          <textarea
+            rows="4"
+            class="modal-textarea"
+            placeholder="e.g. I have arrived at your building gate. Could you please unlock the vehicle?"
+            [(ngModel)]="messageText">
+          </textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="closeMessageModal()">Cancel</button>
+          <button
+            type="button"
+            class="btn-modal-send"
+            [disabled]="sendingMessage() || !messageText().trim()"
+            (click)="sendMessageToCustomer()">
+            @if (sendingMessage()) {
+              <span>Sending...</span>
+            } @else {
+              <span>Send Message</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

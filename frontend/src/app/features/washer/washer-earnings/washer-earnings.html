@@ -1,0 +1,282 @@
+<div class="washer-earnings-container">
+  <!-- Header -->
+  <div class="page-title-row">
+    <div>
+      <div class="breadcrumb-row">
+        <a routerLink="/washer" class="crumb-link">Dashboard</a>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-current">Earnings & Payouts</span>
+      </div>
+      <h1 class="main-heading">Partner Financials & Payouts</h1>
+      <p class="sub-heading">Real-time revenue tracking, completed wash earnings, weekly trends, and bank payouts.</p>
+    </div>
+
+    <button type="button" class="btn-primary-withdraw" (click)="openWithdraw()">
+      🏦 Withdraw to Bank
+    </button>
+  </div>
+
+  @if (toastMessage()) {
+    <div class="toast-bar">
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="earnings-loading-state">
+      <div class="spinner"></div>
+      <p>Synchronizing financial records with payment and booking services...</p>
+    </div>
+  }
+
+  <!-- Error State with Retry -->
+  @if (!loading() && errorMessage()) {
+    <div class="earnings-error-card">
+      <span class="error-emoji">⚠️</span>
+      <h3 class="error-title">Could Not Load Earnings</h3>
+      <p class="error-desc">{{ errorMessage() }}</p>
+      <button type="button" class="btn-error-retry" (click)="loadEarningsData()">
+        <span>🔄 Retry</span>
+      </button>
+    </div>
+  }
+
+  <!-- Content State -->
+  @if (!loading() && !errorMessage()) {
+    <!-- 6 KPI Earnings Cards (Backend Driven) -->
+    <div class="kpi-cards-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Total Earnings</span>
+        <strong class="kpi-val text-green">₹{{ totalEarnings() | number:'1.0-0' }}</strong>
+        <span class="kpi-sub">Lifetime revenue share</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Today's Earnings</span>
+        <strong class="kpi-val text-blue">₹{{ todayEarnings() | number:'1.0-0' }}</strong>
+        <span class="kpi-sub">Completed jobs today</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">This Week</span>
+        <strong class="kpi-val text-purple">₹{{ weekEarnings() | number:'1.0-0' }}</strong>
+        <span class="kpi-sub">Last 7 days total</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">This Month</span>
+        <strong class="kpi-val text-emerald">₹{{ monthEarnings() | number:'1.0-0' }}</strong>
+        <span class="kpi-sub">Current calendar month</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Completed Washes</span>
+        <strong class="kpi-val text-slate">{{ completedWashes() }}</strong>
+        <span class="kpi-sub">Verified completions</span>
+      </div>
+
+      <div class="kpi-card card-highlight">
+        <span class="kpi-label">Average Earnings</span>
+        <strong class="kpi-val text-green">₹{{ averageEarnings() | number:'1.0-0' }}</strong>
+        <span class="kpi-sub">Per completed wash</span>
+      </div>
+    </div>
+
+    <!-- Available Balance Strip -->
+    <div class="balance-strip-card">
+      <div class="balance-meta">
+        <span class="balance-label">Available Payout Balance</span>
+        <strong class="balance-amount">₹{{ availableBalance() | number:'1.0-0' }}</strong>
+        <span class="balance-desc">Ready for direct bank settlement or UPI transfer</span>
+      </div>
+      <button type="button" class="btn-withdraw-now" (click)="openWithdraw()" [disabled]="availableBalance() <= 0">
+        Initiate Withdrawal →
+      </button>
+    </div>
+
+    <!-- Weekly Bar Chart Visual -->
+    @if (totalEarnings() > 0) {
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h2 class="chart-title">Weekly Revenue Breakdown</h2>
+            <span class="chart-sub">Gross partner share over the past 7 days</span>
+          </div>
+          <span class="chart-total-tag">₹{{ weekEarnings() | number:'1.0-0' }} Past 7 Days</span>
+        </div>
+
+        <div class="bar-chart-visual">
+          @for (d of weeklyDays(); track d.day) {
+            <div class="chart-col">
+              <span class="bar-amt">₹{{ d.amount }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" [style.height.%]="d.heightPercent"></div>
+              </div>
+              <span class="bar-day-lbl">{{ d.day }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Paginated Transactions & Payouts Ledger -->
+    <div class="ledger-card">
+      <div class="ledger-header">
+        <div>
+          <h2 class="ledger-title">Earnings & Payouts Ledger</h2>
+          <span class="ledger-sub">Detailed breakdown per completed job and payment record</span>
+        </div>
+      </div>
+
+      @if (allTransactions().length > 0) {
+        <div class="table-responsive">
+          <table class="ledger-table">
+            <thead>
+              <tr>
+                <th>Record ID</th>
+                <th>Booking Ref</th>
+                <th>Customer</th>
+                <th>Date & Time</th>
+                <th>Service Package</th>
+                <th>Washer Payout</th>
+                <th>Payout Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (tx of paginatedTransactions(); track tx.id) {
+                <tr>
+                  <td>
+                    <span class="tx-id-tag">{{ tx.id }}</span>
+                  </td>
+                  <td>
+                    <a [routerLink]="['/washer/jobs', tx.bookingId]" class="booking-link" title="View Job Details">
+                      {{ tx.bookingRef }}
+                    </a>
+                  </td>
+                  <td>{{ tx.customer }}</td>
+                  <td>{{ tx.date }}</td>
+                  <td>{{ tx.service }}</td>
+                  <td>
+                    <strong class="payout-green">₹{{ tx.amount | number:'1.0-0' }}</strong>
+                  </td>
+                  <td>
+                    <span class="tx-badge" [ngClass]="{
+                      'badge-paid': tx.status === 'PROCESSED',
+                      'badge-proc': tx.status === 'PENDING',
+                      'badge-fail': tx.status === 'FAILED',
+                      'badge-held': tx.status === 'HELD'
+                    }">
+                      @if (tx.status === 'PROCESSED') {
+                        ✓ Processed
+                      } @else if (tx.status === 'PENDING') {
+                        ⏳ Pending
+                      } @else if (tx.status === 'HELD') {
+                        ⏸ On Hold
+                      } @else {
+                        ✕ Failed
+                      }
+                    </span>
+                    @if (tx.reason) {
+                      <small class="tx-reason-note" [title]="tx.reason">({{ tx.reason }})</small>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        @if (totalPages() > 1) {
+          <div class="table-pagination-bar">
+            <div class="page-meta">
+              Showing <strong>{{ (currentPage() - 1) * pageSize() + 1 }}</strong> to
+              <strong>{{ Math.min(currentPage() * pageSize(), allTransactions().length) }}</strong> of
+              <strong>{{ allTransactions().length }}</strong> records
+            </div>
+            <div class="page-buttons">
+              <button
+                type="button"
+                class="pg-arrow-btn"
+                [disabled]="currentPage() === 1"
+                (click)="setPage(currentPage() - 1)">
+                ‹ Prev
+              </button>
+              <span class="pg-info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+              <button
+                type="button"
+                class="pg-arrow-btn"
+                [disabled]="currentPage() === totalPages()"
+                (click)="setPage(currentPage() + 1)">
+                Next ›
+              </button>
+            </div>
+          </div>
+        }
+      } @else {
+        <!-- Designed Empty State -->
+        <div class="earnings-empty-state">
+          <div class="empty-icon-bubble">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+              <line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+          </div>
+          <h3 class="empty-title">No completed washes yet</h3>
+          <p class="empty-desc">
+            Stay online to receive new wash requests. As soon as you complete your first service, your earnings and payout breakdown will appear here.
+          </p>
+          <div class="empty-actions-row">
+            <a routerLink="/washer/requests" class="btn-empty-cta">Check Available Wash Requests →</a>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Withdrawal Modal -->
+  @if (showWithdrawModal()) {
+    <div class="modal-backdrop" (click)="closeWithdraw()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Withdraw Funds to Bank</h3>
+        <p class="modal-sub">Transfer your available partner earnings directly to your verified payout account.</p>
+
+        @if (washerProfile()?.bankAccountNumber) {
+          <div class="bank-account-summary">
+            <div class="bank-icon">🏦</div>
+            <div>
+              <strong>{{ washerProfile()?.bankAccountHolderName || 'Verified Washer Account' }}</strong>
+              <div>Account: <strong>•••• •••• {{ washerProfile()?.bankAccountNumber?.slice(-4) }}</strong></div>
+              <small>IFSC: {{ washerProfile()?.bankIfscCode || 'Configured' }}</small>
+            </div>
+          </div>
+        } @else {
+          <div class="bank-alert-box">
+            <span>ℹ️ Bank details not yet registered. You can configure your payout account in Profile settings.</span>
+            <a routerLink="/washer/profile" (click)="closeWithdraw()" class="link-setup-bank">Configure Bank Details →</a>
+          </div>
+        }
+
+        <div class="amount-field-wrap">
+          <label>Withdrawal Amount</label>
+          <div class="input-money-box">
+            <span class="currency-symbol">₹</span>
+            <input type="text" class="money-input" [value]="availableBalance()" readonly />
+          </div>
+        </div>
+
+        <div class="modal-actions-row">
+          <button type="button" class="btn-cancel-modal" (click)="closeWithdraw()">Cancel</button>
+          <button
+            type="button"
+            class="btn-confirm-modal"
+            (click)="requestWithdrawal()"
+            [disabled]="availableBalance() <= 0">
+            Confirm Transfer (₹{{ availableBalance() | number:'1.0-0' }})
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

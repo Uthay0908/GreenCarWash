@@ -1,0 +1,106 @@
+<div class="washer-leaderboard-container">
+  <!-- Header -->
+  <div class="leaderboard-header">
+    <div class="header-titles">
+      <div class="breadcrumb-row">
+        <a routerLink="/washer" class="crumb-link">Dashboard</a>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-current">Performance Standings</span>
+      </div>
+      <h1 class="main-heading">Partner Leaderboard</h1>
+      <p class="sub-heading">Real-time performance rankings based on verified customer ratings, acceptance SLA, and completed washes.</p>
+    </div>
+
+    @if (currentWasherRank()) {
+      <div class="my-rank-badge-card">
+        <span class="rank-title">Your Current Rank</span>
+        <strong class="rank-number">#{{ currentWasherRank() }}</strong>
+        <span class="rank-sub">out of {{ totalRankedWashers() }} partners</span>
+      </div>
+    }
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="eco-spinner"></div>
+      <p>Calculating live partner rankings from backend service...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (!loading() && errorMessage()) {
+    <div class="error-banner">
+      <span class="error-icon">⚠️</span>
+      <p>{{ errorMessage() }}</p>
+      <button type="button" class="btn-retry" (click)="loadLeaderboardData()">Retry</button>
+    </div>
+  }
+
+  <!-- Content State -->
+  @if (!loading() && !errorMessage()) {
+    @if (leaderboard().length === 0) {
+      <div class="empty-state-card">
+        <div class="empty-icon">🏆</div>
+        <h3>No Leaderboard Standings Yet</h3>
+        <p>Rankings will appear as partners deliver verified eco steam washes across your region.</p>
+      </div>
+    } @else {
+      <!-- Leaderboard Table Card -->
+      <div class="leaderboard-card">
+        <div class="table-wrap">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th class="col-rank">Rank</th>
+                <th class="col-partner">Partner</th>
+                <th class="col-metric">Water Saved</th>
+                <th class="col-metric">Customer Rating</th>
+                <th class="col-metric">Completed Washes</th>
+                <th class="col-metric">Acceptance Rate</th>
+                <th class="col-metric">On-Time SLA</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of leaderboard(); track entry.washerProfileId) {
+                <tr [class.highlight-row]="entry.isCurrentWasher">
+                  <td class="col-rank">
+                    <div class="rank-pill" [class.rank-gold]="entry.rank === 1" [class.rank-silver]="entry.rank === 2" [class.rank-bronze]="entry.rank === 3">
+                      @if (entry.rank === 1) { 🥇 }
+                      @else if (entry.rank === 2) { 🥈 }
+                      @else if (entry.rank === 3) { 🥉 }
+                      <span>#{{ entry.rank }}</span>
+                    </div>
+                  </td>
+                  <td class="col-partner">
+                    <div class="partner-meta">
+                      <strong>{{ entry.washerName }}</strong>
+                      @if (entry.isCurrentWasher) {
+                        <span class="you-badge">YOU</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="col-metric">
+                    <span class="water-saved-pill">🌱 {{ entry.totalWaterSavedLiters | number:'1.0-1' }} L</span>
+                  </td>
+                  <td class="col-metric">
+                    <span class="rating-cell">⭐ {{ entry.averageRating | number:'1.2-2' }}</span>
+                  </td>
+                  <td class="col-metric">
+                    <strong>{{ entry.totalCompletedJobs }}</strong> washes
+                  </td>
+                  <td class="col-metric">
+                    <span class="pct-pill">{{ (entry.acceptanceRate * 100) | number:'1.0-0' }}%</span>
+                  </td>
+                  <td class="col-metric">
+                    <span class="pct-pill text-emerald">{{ (100 - (entry.slaBreachRate * 100)) | number:'1.0-0' }}%</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+</div>

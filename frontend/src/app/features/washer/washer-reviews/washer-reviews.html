@@ -1,0 +1,216 @@
+<div class="washer-reviews-container">
+  <!-- Toast Notification -->
+  @if (toastMessage()) {
+    <div class="toast-bar">
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <div class="reviews-header">
+    <div class="header-titles">
+      <div class="breadcrumb-row">
+        <a routerLink="/washer" class="crumb-link">Dashboard</a>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-current">Customer Feedback</span>
+      </div>
+      <h1 class="main-heading">Reviews & Complaints</h1>
+      <p class="sub-heading">Real-time feedback from verified customers and operational support resolution.</p>
+    </div>
+
+    <!-- Overall Rating Card -->
+    <div class="rating-highlight-card">
+      <div class="rating-score-box">
+        <span class="score-number">{{ averageRating() | number:'1.1-1' }}</span>
+        <div class="stars-row">
+          @for (s of [1, 2, 3, 4, 5]; track s) {
+            <span class="star" [class.filled]="s <= averageRating()">★</span>
+          }
+        </div>
+      </div>
+      <div class="rating-meta">
+        <strong>Partner Rating</strong>
+        <span>{{ totalReviewsCount() }} verified reviews</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Switcher -->
+  <div class="tabs-row">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'REVIEWS'"
+      (click)="setTab('REVIEWS')">
+      <span>⭐ Customer Reviews ({{ reviews().length }})</span>
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'COMPLAINTS'"
+      (click)="setTab('COMPLAINTS')">
+      <span>⚠️ Service Complaints ({{ complaints().length }})</span>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="eco-spinner"></div>
+      <p>Loading feedback records from backend database...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (!loading() && errorMessage()) {
+    <div class="error-banner">
+      <span class="error-icon">⚠️</span>
+      <p>{{ errorMessage() }}</p>
+      <button type="button" class="btn-retry" (click)="loadProfileAndData()">Retry</button>
+    </div>
+  }
+
+  <!-- Tab 1: REVIEWS -->
+  @if (!loading() && !errorMessage() && activeTab() === 'REVIEWS') {
+    @if (reviews().length === 0) {
+      <div class="empty-state-card">
+        <div class="empty-icon">⭐</div>
+        <h3>No Customer Reviews Yet</h3>
+        <p>Complete assigned wash orders with high quality to earn 5-star ratings from car owners.</p>
+        <a routerLink="/washer/jobs" class="btn-empty-action">View Assigned Jobs</a>
+      </div>
+    } @else {
+      <div class="reviews-grid">
+        @for (rev of reviews(); track rev.id) {
+          <div class="review-card">
+            <div class="review-top">
+              <div class="customer-avatar-col">
+                <div class="customer-avatar">
+                  {{ 'C' + rev.customerId }}
+                </div>
+                <div>
+                  <h4 class="customer-title">Customer #{{ rev.customerId }}</h4>
+                  <span class="booking-tag">Booking #GCW-{{ rev.bookingId }}</span>
+                </div>
+              </div>
+
+              <div class="review-rating-block">
+                <div class="stars-strip">
+                  @for (s of [1, 2, 3, 4, 5]; track s) {
+                    <span class="star-tiny" [class.filled]="s <= rev.rating">★</span>
+                  }
+                </div>
+                <span class="rating-num">{{ rev.rating }}.0</span>
+              </div>
+            </div>
+
+            <p class="review-comment">"{{ rev.comment }}"</p>
+
+            @if (rev.photoUrls && rev.photoUrls.length > 0) {
+              <div class="review-photos-strip">
+                @for (photo of rev.photoUrls; track photo) {
+                  <img [src]="photo" alt="Customer review photo" class="review-thumb" />
+                }
+              </div>
+            }
+
+            <div class="review-footer">
+              <span class="review-date">{{ rev.createdAt | date:'mediumDate' }}</span>
+              <span class="read-only-pill">🔒 Verified Customer Review (Read-only)</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- Tab 2: COMPLAINTS -->
+  @if (!loading() && !errorMessage() && activeTab() === 'COMPLAINTS') {
+    @if (complaints().length === 0) {
+      <div class="empty-state-card clean-record">
+        <div class="empty-icon">🛡️</div>
+        <h3>Clean Service Record</h3>
+        <p>Great job! You have zero open complaints registered against your completed washes.</p>
+      </div>
+    } @else {
+      <div class="complaints-list">
+        @for (comp of complaints(); track comp.id) {
+          <div class="complaint-card" [class.status-open]="comp.status === 'OPEN'">
+            <div class="complaint-header">
+              <div class="complaint-meta-left">
+                <span class="complaint-id-tag">Ticket #CMP-{{ comp.id }}</span>
+                <span class="booking-link">Order #GCW-{{ comp.bookingId }}</span>
+                <span class="complaint-type-pill">{{ comp.complaintType }}</span>
+              </div>
+
+              <div class="complaint-status-pill" [ngClass]="'status-' + comp.status.toLowerCase()">
+                {{ comp.status }}
+              </div>
+            </div>
+
+            <div class="complaint-body">
+              <h4 class="complaint-desc-title">Customer Issue Description:</h4>
+              <p class="complaint-desc-text">{{ comp.description }}</p>
+
+              @if (comp.adminNotes) {
+                <div class="admin-notes-box">
+                  <span class="notes-tag">Admin Investigation / Resolution:</span>
+                  <p>{{ comp.adminNotes }}</p>
+                </div>
+              }
+
+              @if (comp.washerResponse) {
+                <div class="washer-response-box">
+                  <span class="response-tag">Your Submitted Statement:</span>
+                  <p>{{ comp.washerResponse }}</p>
+                </div>
+              }
+            </div>
+
+            <div class="complaint-footer">
+              <span class="complaint-date">Reported: {{ comp.createdAt | date:'medium' }}</span>
+
+              <button
+                type="button"
+                class="btn-respond-complaint"
+                (click)="openResponseModal(comp)">
+                {{ comp.washerResponse ? '✏️ Edit Statement' : '💬 Respond to Ticket' }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- Response Modal -->
+  @if (respondingComplaint()) {
+    <div class="modal-backdrop" (click)="closeResponseModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Partner Statement for Ticket #CMP-{{ respondingComplaint()?.id }}</h3>
+        <p class="modal-sub">Provide your operational notes regarding the service for Order #GCW-{{ respondingComplaint()?.bookingId }}.</p>
+
+        <div class="modal-form">
+          <label>Your Statement / Explanation</label>
+          <textarea
+            class="modal-textarea"
+            rows="4"
+            placeholder="Describe what occurred, vehicle inspection state, pre-existing damages noted, or resolution steps..."
+            [ngModel]="responseText()"
+            (ngModelChange)="responseText.set($event)"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="closeResponseModal()">Cancel</button>
+          <button
+            type="button"
+            class="btn-submit"
+            [disabled]="submittingResponse() || !responseText().trim()"
+            (click)="submitResponse()">
+            {{ submittingResponse() ? 'Submitting...' : 'Submit Statement' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

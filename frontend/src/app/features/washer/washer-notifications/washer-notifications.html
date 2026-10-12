@@ -1,0 +1,165 @@
+<div class="washer-notif-container">
+  <!-- Page Header -->
+  <div class="page-title-row">
+    <div>
+      <div class="breadcrumb-row">
+        <a routerLink="/washer" class="crumb-link">Dashboard</a>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-current">Notifications</span>
+      </div>
+      <h1 class="main-heading">Notifications Center</h1>
+      <p class="sub-heading">Real-time alerts for booking dispatch offers, customer arrivals, add-on requests, and payouts.</p>
+    </div>
+
+    @if (unreadCount() > 0) {
+      <button
+        type="button"
+        class="btn-mark-all"
+        (click)="markAllAsRead()"
+        [disabled]="actionInProgress()">
+        ✓ Mark All Read ({{ unreadCount() }})
+      </button>
+    }
+  </div>
+
+  @if (toastMessage()) {
+    <div class="toast-bar">
+      <span>{{ toastMessage() }}</span>
+    </div>
+  }
+
+  <!-- Tabs Row (STEP 9) -->
+  <div class="notif-tabs-nav">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'ALL'"
+      (click)="setTab('ALL')">
+      <span>All Alerts</span>
+      <span class="tab-badge bg-gray">{{ notifications().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'BOOKING'"
+      (click)="setTab('BOOKING')">
+      <span>Bookings & Dispatch</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'PAYMENT'"
+      (click)="setTab('PAYMENT')">
+      <span>Payouts & Money</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'SERVICE'"
+      (click)="setTab('SERVICE')">
+      <span>Service & Add-ons</span>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="notif-loading-state">
+      <div class="spinner"></div>
+      <p>Fetching notifications from event stream...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (!loading() && errorMessage()) {
+    <div class="notif-error-card">
+      <span class="error-emoji">⚠️</span>
+      <h3 class="error-title">Could Not Load Notifications</h3>
+      <p class="error-desc">{{ errorMessage() }}</p>
+      <button type="button" class="btn-error-retry" (click)="loadNotifications()">
+        <span>🔄 Retry</span>
+      </button>
+    </div>
+  }
+
+  <!-- Content State -->
+  @if (!loading()) {
+    @if (filteredNotifications().length > 0) {
+      <div class="notif-list-stack">
+        @for (item of filteredNotifications(); track item.id) {
+          <div class="notif-item-card" [class.is-unread]="!item.read" (click)="markAsRead(item)">
+            <div class="notif-icon-col">
+              <div class="notif-icon-circle" [ngClass]="{
+                'icon-booking': item.eventType?.includes('Booking') || item.eventType?.includes('Assigned'),
+                'icon-payment': item.eventType?.includes('Payment') || item.eventType?.includes('Payout'),
+                'icon-service': item.eventType?.includes('Service') || item.eventType?.includes('AddOn')
+              }">
+                @if (item.eventType?.includes('Payment') || item.eventType?.includes('Payout')) {
+                  <span>💳</span>
+                } @else if (item.eventType?.includes('AddOn')) {
+                  <span>✨</span>
+                } @else if (item.eventType?.includes('Booking') || item.eventType?.includes('Assigned')) {
+                  <span>🚗</span>
+                } @else {
+                  <span>🔔</span>
+                }
+              </div>
+            </div>
+
+            <div class="notif-body-col">
+              <div class="notif-meta-row">
+                <span class="notif-type-tag">{{ item.eventType || 'System Notification' }}</span>
+                <span class="notif-time">{{ item.createdAt | date:'medium' }}</span>
+              </div>
+
+              <h3 class="notif-title">{{ item.title }}</h3>
+              <p class="notif-body-text">{{ item.body }}</p>
+
+              <div class="notif-actions-row">
+                @if (item.referenceId) {
+                  <a
+                    [routerLink]="['/washer/jobs', item.referenceId]"
+                    class="btn-ref-link"
+                    (click)="$event.stopPropagation()">
+                    View Related Booking #{{ item.referenceId }} →
+                  </a>
+                }
+
+                @if (!item.read) {
+                  <button
+                    type="button"
+                    class="btn-mark-read"
+                    (click)="markAsRead(item, $event)">
+                    Mark as Read
+                  </button>
+                } @else {
+                  <span class="read-indicator">✓ Read</span>
+                }
+              </div>
+            </div>
+
+            @if (!item.read) {
+              <div class="unread-dot-badge" title="Unread notification"></div>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <!-- Empty State -->
+      <div class="notif-empty-state">
+        <div class="empty-icon-bubble">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+        <h3 class="empty-title">No notifications in this tab</h3>
+        <p class="empty-desc">
+          You are all caught up! When you receive dispatch offers, job assignments, or payout confirmations, they will appear here.
+        </p>
+      </div>
+    }
+  }
+</div>
