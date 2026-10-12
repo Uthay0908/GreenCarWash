@@ -1,0 +1,27 @@
+.detail-card {
+  max-width: 640px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 0;
+}
+
+.detail-grid dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--gcw-text-muted);
+  font-weight: 700;
+}
+
+.detail-grid dd {
+  margin: 0.15rem 0 0;
+}
+
+.notes {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gcw-border);
+}

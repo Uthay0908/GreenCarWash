@@ -1,0 +1,299 @@
+.gcw-vehicle-form-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.9375rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+}
+
+.btn-back-link {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #059669;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.btn-back-link:hover {
+  color: #047857;
+  text-decoration: underline;
+}
+
+.vehicle-form-container {
+  max-width: 800px;
+}
+
+.gcw-error-alert {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #991b1b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+
+.vehicle-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-two-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.form-three-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 1.25rem;
+}
+
+.uppercase-input {
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.field-error-text {
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.35rem;
+}
+
+/* Photo Presets */
+.photo-presets-field {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.presets-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.preset-card-btn {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.4rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+}
+.preset-card-btn:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
+}
+.is-selected-preset {
+  border-color: #10b981 !important;
+  background: #ecfdf5 !important;
+}
+
+.preset-thumb {
+  width: 100%;
+  height: 55px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.preset-caption {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #334155;
+  text-align: center;
+}
+
+.sub-label {
+  margin-top: 0.5rem;
+}
+
+/* Original Car Photo Upload */
+.car-upload-field-block {
+  margin-top: 0.5rem;
+}
+
+.car-photo-upload-zone {
+  margin-top: 0.5rem;
+}
+
+.upload-dropzone-box {
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+.upload-dropzone-box:hover {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.upload-icon-graphic {
+  font-size: 2.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.upload-primary-text {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.upload-sub-text {
+  font-size: 0.775rem;
+  color: #64748b;
+  margin: 0 0 1rem;
+  max-width: 360px;
+}
+
+.btn-browse-file {
+  background: #10b981;
+  color: #ffffff;
+  padding: 0.6rem 1.4rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  transition: transform 0.2s ease;
+}
+.btn-browse-file:hover {
+  transform: translateY(-2px);
+  background: #059669;
+}
+
+.uploaded-car-preview-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  max-height: 240px;
+  border: 2px solid #10b981;
+  background: #000000;
+}
+
+.uploaded-car-img {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  display: block;
+}
+
+.preview-overlay-actions {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-change-photo {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: background 0.15s ease;
+}
+.btn-change-photo:hover {
+  background: #0f172a;
+}
+
+.btn-remove-photo {
+  background: rgba(239, 68, 68, 0.85);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.btn-remove-photo:hover {
+  background: #dc2626;
+}
+
+.preset-accordion-toggle {
+  margin-top: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+}
+
+.preset-summary-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+}
+
+.form-cta-strip {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.btn-cancel-form {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #64748b;
+  text-decoration: none;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  transition: all 0.15s;
+}
+.btn-cancel-form:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+@media (max-width: 768px) {
+  .form-two-col-grid,
+  .form-three-col-grid {
+    grid-template-columns: 1fr;
+  }
+  .presets-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

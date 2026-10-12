@@ -1,0 +1,137 @@
+<div class="gcw-vehicles-page">
+  <!-- Page Header -->
+  <div class="gcw-page-header">
+    <div>
+      <h1 class="page-title">My Vehicles</h1>
+      <p class="page-subtitle">Manage your registered cars and two-wheelers for doorstep steam washing.</p>
+    </div>
+    <a routerLink="/vehicles/new" class="btn-add-vehicle-main">
+      + Add Vehicle
+    </a>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="vehicles-loading-grid">
+      <app-customer-card><app-customer-skeleton lines="4" /></app-customer-card>
+      <app-customer-card><app-customer-skeleton lines="4" /></app-customer-card>
+      <app-customer-card><app-customer-skeleton lines="4" /></app-customer-card>
+    </div>
+  }
+
+  <!-- Error State with Retry -->
+  @else if (error()) {
+    <div class="gcw-error-banner">
+      <span class="error-icon">⚠️</span>
+      <span class="error-msg">{{ error() }}</span>
+      <app-customer-button variant="danger" size="sm" (clicked)="loadVehicles()">
+        ↻ Retry
+      </app-customer-button>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @else if (vehicles().length === 0) {
+    <app-customer-card>
+      <app-customer-empty-state
+        title="No Vehicles Registered"
+        message="Add your first vehicle to schedule instant doorstep steam washes and track service history."
+        actionLabel="Register a Vehicle"
+        icon="🚗"
+        (actionClicked)="loadVehicles()"
+      />
+    </app-customer-card>
+  }
+
+  <!-- Vehicles Grid -->
+  @else {
+    <div class="vehicles-card-grid">
+      @for (v of vehicles(); track v.id) {
+        <div class="vehicle-detailed-card">
+          <!-- Top Badges -->
+          <div class="card-top-tags">
+            <span class="vtype-pill">{{ v.vehicleType }}</span>
+            @if (v.color) {
+              <span class="vcolor-pill">
+                <span class="color-dot"></span>
+                {{ v.color }}
+              </span>
+            }
+          </div>
+
+          <!-- Vehicle Visual & Heading -->
+          <div class="card-vehicle-identity">
+            <div class="vehicle-icon-bubble">
+              <span>{{ vehicleIcon(v.vehicleType) }}</span>
+            </div>
+            <div class="vehicle-text-wrap">
+              <h3 class="vehicle-heading">{{ v.make }} {{ v.model }}</h3>
+              <!-- US Style License Plate -->
+              <div class="hsrp-plate">
+                <span class="hsrp-ind-tag">USA</span>
+                <span class="hsrp-number-text">{{ v.licensePlate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Image or Notes Preview -->
+          @if (v.imageUrl) {
+            <div class="vehicle-photo-preview">
+              <img [src]="v.imageUrl" [alt]="v.make + ' ' + v.model" class="v-photo" />
+            </div>
+          }
+
+          @if (v.notes) {
+            <p class="vehicle-notes-snippet">
+              <span class="notes-icon">📌</span> {{ v.notes }}
+            </p>
+          }
+
+          <!-- Actions Footer -->
+          <div class="card-actions-strip">
+            <app-customer-button
+              variant="primary"
+              size="sm"
+              icon="🚿"
+              (clicked)="selectForBooking(v)"
+            >
+              Wash This Car
+            </app-customer-button>
+
+            <div class="card-secondary-actions">
+              <button
+                type="button"
+                class="btn-action-icon edit-action"
+                title="Edit Vehicle"
+                (click)="editVehicle(v)"
+              >
+                ✏️ Edit
+              </button>
+              <button
+                type="button"
+                class="btn-action-icon delete-action"
+                title="Delete Vehicle"
+                (click)="promptDelete(v)"
+              >
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Real Backend Delete Confirmation Dialog -->
+  <app-customer-confirm-dialog
+    [isOpen]="vehicleToDelete() !== null"
+    [title]="'Delete Vehicle?'"
+    [message]="'Are you sure you want to delete ' + (vehicleToDelete()?.make || '') + ' ' + (vehicleToDelete()?.model || '') + ' (' + (vehicleToDelete()?.licensePlate || '') + ')? This action cannot be undone.'"
+    [confirmLabel]="isDeleting() ? 'Deleting...' : 'Delete Vehicle'"
+    [cancelLabel]="'Cancel'"
+    [isDanger]="true"
+    [icon]="'🗑️'"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
+</div>
