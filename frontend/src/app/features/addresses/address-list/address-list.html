@@ -1,0 +1,186 @@
+<div class="gcw-addresses-page">
+  <!-- Page Header -->
+  <div class="gcw-page-header">
+    <div>
+      <h1 class="page-title">My Addresses</h1>
+      <p class="page-subtitle">Manage your home, office, and preferred service spots for eco-friendly doorstep car wash.</p>
+    </div>
+    <a routerLink="/addresses/new" class="btn-add-address-main">
+      + Add New Address
+    </a>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="addresses-loading-grid">
+      <app-customer-card><app-customer-skeleton lines="4" /></app-customer-card>
+      <app-customer-card><app-customer-skeleton lines="4" /></app-customer-card>
+    </div>
+  }
+
+  <!-- Error State with Retry -->
+  @else if (error()) {
+    <div class="gcw-error-banner">
+      <span class="error-icon">⚠️</span>
+      <span class="error-msg">{{ error() }}</span>
+      <app-customer-button variant="danger" size="sm" (clicked)="loadAddresses()">
+        ↻ Retry
+      </app-customer-button>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @else if (addresses().length === 0) {
+    <app-customer-card>
+      <app-customer-empty-state
+        title="No Addresses Saved"
+        message="Add your home, office, or apartment address to get doorstep eco steam washes scheduled instantly."
+        actionLabel="Add Address"
+        icon="📍"
+        (actionClicked)="loadAddresses()"
+      />
+    </app-customer-card>
+  }
+
+  <!-- Addresses Grid -->
+  @else {
+    <div class="addresses-card-grid">
+      @for (a of addresses(); track a.id) {
+        <div class="address-detailed-card" [class.is-default-card]="a.isDefault">
+          <!-- Card Header / Badges -->
+          <div class="card-header-bar">
+            <div class="address-label-badge">
+              <span class="label-icon">{{ labelIcon(a.label) }}</span>
+              <span class="label-text">{{ a.label || 'Saved Location' }}</span>
+            </div>
+
+            <div class="status-badges-group">
+              @if (a.isDefault) {
+                <span class="badge-default-active">
+                  ⭐ DEFAULT
+                </span>
+              }
+              <span class="badge-serviceable" [class.not-serviceable]="!a.serviceable">
+                {{ a.serviceable ? 'SERVICEABLE' : 'UNAVAILABLE' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Address Main Content -->
+          <div class="address-content-body">
+            <!-- Line 1: Door No, Building, Street -->
+            <div class="address-line-primary">
+              <span class="pin-marker">📍</span>
+              <span class="line1-text">{{ a.line1 }}</span>
+            </div>
+
+            <!-- Line 2: Landmark / Area -->
+            @if (a.line2) {
+              <div class="address-line-secondary">
+                <span class="landmark-icon">🚩</span>
+                <span class="line2-text">{{ a.line2 }}</span>
+              </div>
+            }
+
+            <!-- City, State, Postal Code, Country -->
+            <div class="address-region-meta">
+              <span>{{ a.city }}, {{ a.state }} - <strong>{{ a.postalCode }}</strong></span>
+              <span class="country-tag">({{ a.country }})</span>
+            </div>
+
+            <!-- GPS Location Coordinates (where backend supports it) -->
+            @if (a.latitude && a.longitude) {
+              <div class="address-gps-chip">
+                <span class="gps-icon">🛰️</span>
+                <span class="gps-coords">GPS: {{ a.latitude | number:'1.4-4' }}°N, {{ a.longitude | number:'1.4-4' }}°E</span>
+                <a
+                  [href]="'https://www.google.com/maps?q=' + a.latitude + ',' + a.longitude"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="gps-map-link"
+                >
+                  Map ↗
+                </a>
+              </div>
+            }
+
+            <!-- Access Instructions or Parking Notes -->
+            @if (a.accessInstructions || a.parkingShadeNotes) {
+              <div class="address-notes-box">
+                @if (a.accessInstructions) {
+                  <div class="note-row">
+                    <span class="note-lbl">🔑 Access:</span>
+                    <span class="note-val">{{ a.accessInstructions }}</span>
+                  </div>
+                }
+                @if (a.parkingShadeNotes) {
+                  <div class="note-row">
+                    <span class="note-lbl">🅿️ Parking:</span>
+                    <span class="note-val">{{ a.parkingShadeNotes }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Actions Strip -->
+          <div class="card-actions-strip">
+            <app-customer-button
+              variant="primary"
+              size="sm"
+              icon="🚿"
+              (clicked)="selectForBooking(a)"
+            >
+              Wash Here
+            </app-customer-button>
+
+            <div class="card-secondary-actions">
+              @if (!a.isDefault) {
+                <button
+                  type="button"
+                  class="btn-action-icon default-action"
+                  title="Set as Default Address"
+                  [disabled]="settingDefaultId() === a.id"
+                  (click)="setDefault(a)"
+                >
+                  {{ settingDefaultId() === a.id ? 'Saving...' : '⭐ Set Default' }}
+                </button>
+              }
+
+              <button
+                type="button"
+                class="btn-action-icon edit-action"
+                title="Edit Address"
+                (click)="editAddress(a)"
+              >
+                ✏️ Edit
+              </button>
+
+              <button
+                type="button"
+                class="btn-action-icon delete-action"
+                title="Delete Address"
+                (click)="promptDelete(a)"
+              >
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Real Backend Delete Confirmation Dialog -->
+  <app-customer-confirm-dialog
+    [isOpen]="addressToDelete() !== null"
+    [title]="'Delete Address?'"
+    [message]="'Are you sure you want to delete ' + (addressToDelete()?.label || 'this address') + ' (' + (addressToDelete()?.line1 || '') + ')? This action cannot be undone.'"
+    [confirmLabel]="isDeleting() ? 'Deleting...' : 'Delete Address'"
+    [cancelLabel]="'Cancel'"
+    [isDanger]="true"
+    [icon]="'🗑️'"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
+</div>

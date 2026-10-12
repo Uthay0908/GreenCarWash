@@ -1,0 +1,238 @@
+<div class="gcw-address-form-page">
+  <!-- Back Link & Header -->
+  <div class="form-header-area">
+    <a routerLink="/addresses" class="back-link">
+      ← Back to Addresses
+    </a>
+    <h1 class="form-title">{{ editingId() ? 'Edit Address' : 'Add New Address' }}</h1>
+    <p class="form-subtitle">Provide your doorstep location for seamless eco-friendly car wash delivery.</p>
+  </div>
+
+  <app-customer-card>
+    <!-- Server Error Message -->
+    @if (errorMessage()) {
+      <div class="form-error-banner">
+        <span>⚠️ {{ errorMessage() }}</span>
+      </div>
+    }
+
+    <!-- GPS Detect Notice -->
+    @if (gpsNotice()) {
+      <div class="form-gps-notice">
+        <span>🛰️ {{ gpsNotice() }}</span>
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="gcw-address-form">
+      <!-- Address Type / Label Presets -->
+      <div class="form-section">
+        <label class="section-label">Address Type</label>
+        <div class="presets-row">
+          @for (preset of labelPresets; track preset.label) {
+            <button
+              type="button"
+              class="preset-chip"
+              [class.is-selected]="selectedPreset() === preset.label"
+              (click)="choosePreset(preset)"
+            >
+              <span class="chip-icon">{{ preset.icon }}</span>
+              <span class="chip-label">{{ preset.label }}</span>
+            </button>
+          }
+        </div>
+
+        @if (selectedPreset() === 'Other') {
+          <div class="form-field-group custom-label-field">
+            <label for="customLabel">Custom Label</label>
+            <input
+              id="customLabel"
+              type="text"
+              formControlName="label"
+              placeholder="e.g. Vacation Home, Gym, Warehouse"
+              class="form-input"
+            />
+          </div>
+        }
+      </div>
+
+      <!-- Quick GPS Detection -->
+      <div class="gps-detector-strip">
+        <div class="gps-info-text">
+          <span class="gps-bolt">📍</span>
+          <span>Want accurate washer dispatch? Pin your current GPS location:</span>
+        </div>
+        <button
+          type="button"
+          class="btn-detect-gps"
+          [disabled]="detectingGps()"
+          (click)="useCurrentLocation()"
+        >
+          {{ detectingGps() ? 'Detecting Location...' : '📍 Use Current Location' }}
+        </button>
+      </div>
+
+      <!-- Street Address Line 1 -->
+      <div class="form-field-group">
+        <label for="line1" class="field-label">
+          Flat / Door No., Building Name & Street <span class="req">*</span>
+        </label>
+        <input
+          id="line1"
+          type="text"
+          formControlName="line1"
+          placeholder="e.g. Flat 402, Green Towers, 12 Lake View Rd"
+          class="form-input"
+          [class.has-error]="f.line1.touched && f.line1.invalid"
+        />
+        @if (f.line1.touched && f.line1.errors?.['required']) {
+          <span class="field-error-msg">Door No. and Street address are required</span>
+        }
+      </div>
+
+      <!-- Landmark Line 2 -->
+      <div class="form-field-group">
+        <label for="line2" class="field-label">
+          Landmark / Area / Nearby (Optional)
+        </label>
+        <input
+          id="line2"
+          type="text"
+          formControlName="line2"
+          placeholder="e.g. Near Tidel Park, Opposite Phoenix Mall"
+          class="form-input"
+        />
+      </div>
+
+      <!-- City & State -->
+      <div class="form-grid-2">
+        <div class="form-field-group">
+          <label for="city" class="field-label">City <span class="req">*</span></label>
+          <input
+            id="city"
+            type="text"
+            formControlName="city"
+            placeholder="e.g. Chennai"
+            class="form-input"
+            [class.has-error]="f.city.touched && f.city.invalid"
+          />
+          @if (f.city.touched && f.city.errors?.['required']) {
+            <span class="field-error-msg">City is required</span>
+          }
+        </div>
+
+        <div class="form-field-group">
+          <label for="state" class="field-label">State <span class="req">*</span></label>
+          <input
+            id="state"
+            type="text"
+            formControlName="state"
+            placeholder="e.g. Tamil Nadu"
+            class="form-input"
+            [class.has-error]="f.state.touched && f.state.invalid"
+          />
+          @if (f.state.touched && f.state.errors?.['required']) {
+            <span class="field-error-msg">State is required</span>
+          }
+        </div>
+      </div>
+
+      <!-- Postal Code & Country -->
+      <div class="form-grid-2">
+        <div class="form-field-group">
+          <label for="postalCode" class="field-label">PIN / Postal Code <span class="req">*</span></label>
+          <input
+            id="postalCode"
+            type="text"
+            formControlName="postalCode"
+            placeholder="e.g. 600113"
+            class="form-input"
+            [class.has-error]="f.postalCode.touched && f.postalCode.invalid"
+          />
+          @if (f.postalCode.touched && f.postalCode.errors?.['required']) {
+            <span class="field-error-msg">PIN code is required</span>
+          }
+          @if (f.postalCode.touched && f.postalCode.errors?.['pattern']) {
+            <span class="field-error-msg">Please enter a valid postal code</span>
+          }
+        </div>
+
+        <div class="form-field-group">
+          <label for="country" class="field-label">Country <span class="req">*</span></label>
+          <input
+            id="country"
+            type="text"
+            formControlName="country"
+            class="form-input"
+            [class.has-error]="f.country.touched && f.country.invalid"
+          />
+          @if (f.country.touched && f.country.errors?.['required']) {
+            <span class="field-error-msg">Country is required</span>
+          }
+        </div>
+      </div>
+
+      <!-- Optional GPS Coordinates Display -->
+      @if (form.controls.latitude.value && form.controls.longitude.value) {
+        <div class="coordinates-preview-box">
+          <span class="coord-tag">Latitude: {{ form.controls.latitude.value }}</span>
+          <span class="coord-tag">Longitude: {{ form.controls.longitude.value }}</span>
+        </div>
+      }
+
+      <!-- Access Instructions -->
+      <div class="form-field-group">
+        <label for="accessInstructions" class="field-label">
+          Access Instructions (Optional)
+        </label>
+        <textarea
+          id="accessInstructions"
+          formControlName="accessInstructions"
+          rows="2"
+          placeholder="e.g. Gate security code #1234, call upon arrival, lift on right"
+          class="form-textarea"
+        ></textarea>
+      </div>
+
+      <!-- Parking & Wash Area Notes -->
+      <div class="form-field-group">
+        <label for="parkingShadeNotes" class="field-label">
+          Parking & Shade Notes (Optional)
+        </label>
+        <textarea
+          id="parkingShadeNotes"
+          formControlName="parkingShadeNotes"
+          rows="2"
+          placeholder="e.g. Covered parking bay B-14, water tap available nearby"
+          class="form-textarea"
+        ></textarea>
+      </div>
+
+      <!-- Default Address Toggle -->
+      <div class="default-toggle-box">
+        <label class="toggle-label-wrap">
+          <input type="checkbox" formControlName="isDefault" class="toggle-checkbox" />
+          <div class="toggle-text-group">
+            <span class="toggle-title">⭐ Set as default address</span>
+            <span class="toggle-desc">Automatically pre-select this address whenever you book a wash.</span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Actions Strip -->
+      <div class="form-actions-strip">
+        <a routerLink="/addresses" class="btn-cancel">
+          Cancel
+        </a>
+        <app-customer-button
+          type="submit"
+          variant="primary"
+          size="md"
+          [loading]="submitting()"
+          [disabled]="form.invalid || submitting()"
+        >
+          {{ editingId() ? 'Update Address' : 'Save Address' }}
+        </app-customer-button>
+      </div>
+    </form>
+  </app-customer-card>
+</div>
